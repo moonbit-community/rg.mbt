@@ -1,15 +1,15 @@
 import {
-  "dii/rg/matcher",
-  "dii/rg/searcher",
-  "dii/rg/termcolor",
-  "dii/rg/regex/automata",
-  "dii/rg/regex/syntax",
+  "moonbit-community/rg/matcher",
+  "moonbit-community/rg/searcher",
+  "moonbit-community/rg/termcolor",
+  "moonbit-community/rg/regex/automata",
+  "moonbit-community/rg/regex/syntax",
   "moonbitlang/core/buffer",
   "moonbitlang/core/bigint",
 }
 
 import {
-  "dii/rg/grep_regex",
+  "moonbit-community/rg/grep_regex",
   "moonbitlang/core/encoding/utf8",
 } for "test"
 

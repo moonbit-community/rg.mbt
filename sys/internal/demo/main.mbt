@@ -1,5 +1,5 @@
 ///|
-/// A tiny command line exercising `dii/rg/sys`:
+/// A tiny command line exercising `moonbit-community/rg/sys`:
 ///
 /// ```text
 /// demo args               print the arguments

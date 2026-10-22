@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/regex/automata"
+package "moonbit-community/rg/regex/automata"
 
 import {
-  "dii/rg/memchr",
-  "dii/rg/regex/syntax",
+  "moonbit-community/rg/memchr",
+  "moonbit-community/rg/regex/syntax",
   "moonbitlang/core/debug",
 }
 

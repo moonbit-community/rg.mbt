@@ -1,6 +1,6 @@
 import {
-  "dii/rg/core",
-  "dii/rg/sys",
+  "moonbit-community/rg/core",
+  "moonbit-community/rg/sys",
 }
 
 supported_targets = "native+wasm"

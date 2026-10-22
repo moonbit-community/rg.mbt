@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/termcolor"
+package "moonbit-community/rg/termcolor"
 
 import {
   "moonbitlang/core/debug",

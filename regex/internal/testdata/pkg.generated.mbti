@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/regex/internal/testdata"
+package "moonbit-community/rg/regex/internal/testdata"
 
 // Values
 pub let cases : Array[TestCase]

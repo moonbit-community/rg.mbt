@@ -1,13 +1,13 @@
 import {
-  "dii/rg/matcher",
-  "dii/rg/memchr",
+  "moonbit-community/rg/matcher",
+  "moonbit-community/rg/memchr",
   "moonbitlang/core/encoding/utf8",
 }
 
 warnings = "-implicit_impl_as_method"
 
 import {
-  "dii/rg/regex",
-  "dii/rg/regex/syntax",
-  "dii/rg/grep_regex",
+  "moonbit-community/rg/regex",
+  "moonbit-community/rg/regex/syntax",
+  "moonbit-community/rg/grep_regex",
 } for "wbtest"

@@ -1,5 +1,5 @@
 import {
-  "dii/rg/regex/unicode",
+  "moonbit-community/rg/regex/unicode",
   "moonbitlang/core/encoding/utf8",
 }
 

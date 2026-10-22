@@ -1,10 +1,10 @@
 import {
-  "dii/rg/regex/syntax",
-  "dii/rg/regex/automata",
+  "moonbit-community/rg/regex/syntax",
+  "moonbit-community/rg/regex/automata",
 }
 
 import {
-  "dii/rg/regex/internal/testdata",
+  "moonbit-community/rg/regex/internal/testdata",
 } for "test"
 
 warnings = "-implicit_impl_as_method"

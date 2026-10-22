@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/memchr"
+package "moonbit-community/rg/memchr"
 
 // Values
 pub fn count(Byte, FixedArray[Byte], Int32, Int32) -> Int32

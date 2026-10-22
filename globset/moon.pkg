@@ -1,6 +1,6 @@
 import {
-  "dii/rg/regex",
-  "dii/rg/regex/syntax",
+  "moonbit-community/rg/regex",
+  "moonbit-community/rg/regex/syntax",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/debug",
   "moonbitlang/core/cmp",

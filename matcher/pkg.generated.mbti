@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/matcher"
+package "moonbit-community/rg/matcher"
 
 import {
   "moonbitlang/core/buffer",

@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/regex/unicode"
+package "moonbit-community/rg/regex/unicode"
 
 import {
   "moonbitlang/core/debug",

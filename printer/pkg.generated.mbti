@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/printer"
+package "moonbit-community/rg/printer"
 
 import {
-  "dii/rg/matcher",
-  "dii/rg/searcher",
-  "dii/rg/termcolor",
+  "moonbit-community/rg/matcher",
+  "moonbit-community/rg/searcher",
+  "moonbit-community/rg/termcolor",
   "moonbitlang/core/debug",
 }
 

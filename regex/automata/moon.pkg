@@ -1,11 +1,11 @@
 import {
-  "dii/rg/regex/syntax",
-  "dii/rg/regex/unicode",
-  "dii/rg/memchr",
+  "moonbit-community/rg/regex/syntax",
+  "moonbit-community/rg/regex/unicode",
+  "moonbit-community/rg/memchr",
 }
 
 warnings = "-implicit_impl_as_method"
 
 import {
-  "dii/rg/regex/internal/testdata",
+  "moonbit-community/rg/regex/internal/testdata",
 } for "test"

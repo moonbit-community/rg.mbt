@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/grep_regex"
+package "moonbit-community/rg/grep_regex"
 
 import {
-  "dii/rg/matcher",
-  "dii/rg/regex/syntax",
+  "moonbit-community/rg/matcher",
+  "moonbit-community/rg/regex/syntax",
   "moonbitlang/core/debug",
 }
 

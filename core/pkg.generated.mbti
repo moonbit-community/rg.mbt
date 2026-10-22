@@ -1,12 +1,12 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/core"
+package "moonbit-community/rg/core"
 
 import {
-  "dii/rg/grep_regex",
-  "dii/rg/ignore",
-  "dii/rg/printer",
-  "dii/rg/searcher",
-  "dii/rg/termcolor",
+  "moonbit-community/rg/grep_regex",
+  "moonbit-community/rg/ignore",
+  "moonbit-community/rg/printer",
+  "moonbit-community/rg/searcher",
+  "moonbit-community/rg/termcolor",
   "moonbitlang/core/debug",
 }
 

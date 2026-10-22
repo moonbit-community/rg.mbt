@@ -1,13 +1,13 @@
 import {
-  "dii/rg/memchr",
-  "dii/rg/cli",
-  "dii/rg/sys",
-  "dii/rg/searcher",
-  "dii/rg/matcher",
-  "dii/rg/grep_regex",
-  "dii/rg/printer",
-  "dii/rg/termcolor",
-  "dii/rg/ignore",
+  "moonbit-community/rg/memchr",
+  "moonbit-community/rg/cli",
+  "moonbit-community/rg/sys",
+  "moonbit-community/rg/searcher",
+  "moonbit-community/rg/matcher",
+  "moonbit-community/rg/grep_regex",
+  "moonbit-community/rg/printer",
+  "moonbit-community/rg/termcolor",
+  "moonbit-community/rg/ignore",
   "moonbitlang/core/encoding/utf8",
 }
 

@@ -1,4 +1,4 @@
-# dii/rg/sys
+# moonbit-community/rg/sys
 
 Operating-system abstraction layer for the ripgrep port: arguments,
 environment, raw stdio, files, directories, metadata and (native only)

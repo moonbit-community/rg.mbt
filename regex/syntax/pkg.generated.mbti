@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/regex/syntax"
+package "moonbit-community/rg/regex/syntax"
 
 import {
   "moonbitlang/core/buffer",

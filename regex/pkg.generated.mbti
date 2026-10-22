@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/regex"
+package "moonbit-community/rg/regex"
 
 import {
-  "dii/rg/regex/syntax",
+  "moonbit-community/rg/regex/syntax",
   "moonbitlang/core/debug",
 }
 

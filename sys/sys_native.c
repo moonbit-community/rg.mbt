@@ -1,4 +1,4 @@
-// Native (POSIX) implementation of dii/rg/sys.
+// Native (POSIX) implementation of moonbit-community/rg/sys.
 //
 // Conventions:
 // - Paths arrive as NUL-terminated UTF-8 `Bytes` (borrowed).

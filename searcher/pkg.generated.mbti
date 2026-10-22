@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/rg/searcher"
+package "moonbit-community/rg/searcher"
 
 import {
-  "dii/rg/matcher",
+  "moonbit-community/rg/matcher",
   "moonbitlang/core/debug",
 }
 
