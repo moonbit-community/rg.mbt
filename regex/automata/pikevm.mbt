@@ -138,9 +138,9 @@ pub fn PikeVM::search_slots(
         break
       }
       if !anchored && pre is Some(p) {
-        match p.find(hay, at, end) {
-          None => break
-          Some((s, _)) => at = s
+        match p.find_start(hay, at, end) {
+          -1 => break
+          s => at = s
         }
       }
     }

@@ -182,15 +182,16 @@ fn matches_at(
 }
 
 ///|
-/// Finds the start of the next candidate in `hay[start:end]`, returning
-/// the span of the literal that was found (`(start, end)`).
-pub fn Prefilter::find(
+/// Finds the next candidate in `hay[start:end]` like `find`, returning
+/// its span packed as `start << 32 | end`, or `NO_SPAN` (this avoids
+/// allocating in hot search loops).
+pub fn Prefilter::find_span(
   self : Prefilter,
   hay : FixedArray[Byte],
   start : Int32,
   end : Int32,
-) -> (Int32, Int32)? {
-  let one = (i : Int32) => if i < 0 { None } else { Some((i, i + 1)) }
+) -> Int64 {
+  let one = (i : Int32) => if i < 0 { NO_SPAN } else { span(i, i + 1) }
   match self {
     Byte(b) => one(@memchr.memchr(b, hay, start, end))
     Bytes2(a, b) => one(@memchr.memchr2(a, b, hay, start, end))
@@ -198,18 +199,18 @@ pub fn Prefilter::find(
     ByteSet(set) => {
       for i in start..<end {
         if set[hay[i].to_int()] {
-          return Some((i, i + 1))
+          return span(i, i + 1)
         }
       }
-      None
+      NO_SPAN
     }
-    Teddy(t) => t.find(hay, start, end)
+    Teddy(t) => t.find_span(hay, start, end)
     Substr(finder) => {
       let i = finder.find(hay, start, end)
       if i < 0 {
-        None
+        NO_SPAN
       } else {
-        Some((i, i + finder.needle().length()))
+        span(i, i + finder.needle().length())
       }
     }
     Multi(pairs, small, set, buckets, min_len) => {
@@ -238,16 +239,70 @@ pub fn Prefilter::find(
           }
         }
         if i < 0 {
-          return None
+          return NO_SPAN
         }
         for lit in buckets[hay[i].to_int()] {
           if matches_at(lit, hay, i, end) {
-            return Some((i, i + lit.length()))
+            return span(i, i + lit.length())
           }
         }
         i += 1
       }
-      None
+      NO_SPAN
     }
+  }
+}
+
+///|
+/// The packed span returned when there is no candidate.
+pub const NO_SPAN : Int64 = -1L
+
+///|
+fn span(start : Int32, end : Int32) -> Int64 {
+  (start.to_int64() << 32) | end.to_int64()
+}
+
+///|
+/// The start of a packed span.
+pub fn span_start(sp : Int64) -> Int32 {
+  (sp >> 32).to_int()
+}
+
+///|
+/// The end of a packed span.
+pub fn span_end(sp : Int64) -> Int32 {
+  (sp & 0xFFFFFFFFL).to_int()
+}
+
+///|
+/// Returns the start of the next candidate in `hay[start:end]`, or `-1`.
+pub fn Prefilter::find_start(
+  self : Prefilter,
+  hay : FixedArray[Byte],
+  start : Int32,
+  end : Int32,
+) -> Int32 {
+  let sp = self.find_span(hay, start, end)
+  if sp == NO_SPAN {
+    -1
+  } else {
+    span_start(sp)
+  }
+}
+
+///|
+/// Finds the start of the next candidate in `hay[start:end]`, returning
+/// the span of the literal that was found (`(start, end)`).
+pub fn Prefilter::find(
+  self : Prefilter,
+  hay : FixedArray[Byte],
+  start : Int32,
+  end : Int32,
+) -> (Int32, Int32)? {
+  let sp = self.find_span(hay, start, end)
+  if sp == NO_SPAN {
+    None
+  } else {
+    Some((span_start(sp), span_end(sp)))
   }
 }

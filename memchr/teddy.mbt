@@ -130,15 +130,14 @@ fn Teddy::verify(
 }
 
 ///|
-/// Returns the start and end of the leftmost occurrence of any literal in
-/// `hay[start:end]`, preferring the literal with the highest priority among
-/// those starting at the same position.
-pub fn Teddy::find(
+/// Like `find`, but returns the span packed as `start << 32 | end`, or `-1`
+/// if there is no match (without allocating).
+pub fn Teddy::find_span(
   self : Teddy,
   hay : FixedArray[Byte],
   start : Int32,
   end : Int32,
-) -> (Int32, Int32)? {
+) -> Int64 {
   let limit = end - self.min_len + 1
   let lo = self.lo
   let hi = self.hi
@@ -183,7 +182,7 @@ pub fn Teddy::find(
           m = m & (m - 1)
           let idx = self.verify(hay, end, i + j, scratch[j].to_int())
           if idx >= 0 {
-            return Some((i + j, i + j + self.lits[idx].length()))
+            return pack(i + j, i + j + self.lits[idx].length())
           }
         }
       }
@@ -201,10 +200,33 @@ pub fn Teddy::find(
     if bits != 0 {
       let idx = self.verify(hay, end, i, bits)
       if idx >= 0 {
-        return Some((i, i + self.lits[idx].length()))
+        return pack(i, i + self.lits[idx].length())
       }
     }
     i += 1
   }
-  None
+  -1L
+}
+
+///|
+fn pack(start : Int32, end : Int32) -> Int64 {
+  (start.to_int64() << 32) | end.to_int64()
+}
+
+///|
+/// Returns the start and end of the leftmost occurrence of any literal in
+/// `hay[start:end]`, preferring the literal with the highest priority among
+/// those starting at the same position.
+pub fn Teddy::find(
+  self : Teddy,
+  hay : FixedArray[Byte],
+  start : Int32,
+  end : Int32,
+) -> (Int32, Int32)? {
+  let sp = self.find_span(hay, start, end)
+  if sp < 0L {
+    None
+  } else {
+    Some(((sp >> 32).to_int(), (sp & 0xFFFFFFFFL).to_int()))
+  }
 }

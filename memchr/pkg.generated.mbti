@@ -39,6 +39,7 @@ pub struct Teddy {
   // private fields
 }
 pub fn Teddy::find(Self, FixedArray[Byte], Int32, Int32) -> (Int32, Int32)?
+pub fn Teddy::find_span(Self, FixedArray[Byte], Int32, Int32) -> Int64
 pub fn Teddy::new(Array[FixedArray[Byte]]) -> Self?
 
 // Type aliases

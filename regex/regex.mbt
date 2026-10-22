@@ -161,9 +161,11 @@ pub fn Regex::search_half(
   earliest~ : Bool = false,
 ) -> Int32? {
   if self.pre_is_exact {
-    return match self.pre.unwrap().find(hay, start, end) {
-      Some((_, e)) => Some(e)
-      None => None
+    let sp = self.pre.unwrap().find_span(hay, start, end)
+    return if sp == @automata.NO_SPAN {
+      None
+    } else {
+      Some(@automata.span_end(sp))
     }
   }
   let e = self.fwd.find_fwd(

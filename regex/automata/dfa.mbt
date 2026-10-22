@@ -538,10 +538,11 @@ pub fn LazyDFA::find_fwd(
   let mut at = start
   let pre = if anchored { None } else { pre }
   if pre is Some(p) {
-    match p.find(hay, at, end) {
-      None => return DFA_NO_MATCH
-      Some((s, _)) => at = s
+    let s = p.find_start(hay, at, end)
+    if s < 0 {
+      return DFA_NO_MATCH
     }
+    at = s
   }
   let prev = if at > hs { hay[at - 1].to_int() } else { -1 }
   let mut sid = self.start_state(anchored, prev)
@@ -561,9 +562,9 @@ pub fn LazyDFA::find_fwd(
       if has_pre && cur == start_pid && mat < 0 {
         match pre {
           Some(p) =>
-            match p.find(hay, at, end) {
-              None => return DFA_NO_MATCH
-              Some((s, _)) =>
+            match p.find_start(hay, at, end) {
+              -1 => return DFA_NO_MATCH
+              s =>
                 if s > at {
                   at = s
                   sid = self.start_state(
@@ -604,9 +605,9 @@ pub fn LazyDFA::find_fwd(
     }
     at += 1
     if cur == start_pid && mat < 0 && pre is Some(p) {
-      match p.find(hay, at, end) {
-        None => return DFA_NO_MATCH
-        Some((s, _)) =>
+      match p.find_start(hay, at, end) {
+        -1 => return DFA_NO_MATCH
+        s =>
           if s > at {
             at = s
             sid = self.start_state(
