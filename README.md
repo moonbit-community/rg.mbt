@@ -55,6 +55,20 @@ moon test                 # native
 moon test --target wasm   # wasm
 ```
 
+ripgrep's own integration suite (`tests/*.rs` in the ripgrep repository,
+323 tests) can be run against this port. It needs a ripgrep checkout in
+`.repos/ripgrep` and a Rust toolchain that can build it:
+
+```sh
+scripts/run_rg_integration_tests.sh native   # 323/323 pass
+scripts/run_rg_integration_tests.sh wasm     # 305/323 pass (wasmtime)
+```
+
+The 18 wasm failures are all due to WASI rather than the port: 9 need to
+spawn a process (`-z/--search-zip`, `--pre`), 3 rely on stdin being detected
+as readable when no path is given, and 6 search symlinks with absolute
+targets, which wasmtime's sandbox refuses to read.
+
 ## Differences from ripgrep
 
 - No PCRE2 (`--pcre2` reports that PCRE2 is unavailable, like a build of
@@ -62,6 +76,15 @@ moon test --target wasm   # wasm
 - Searching is single threaded (`-j/--threads` is accepted; output is the
   same as `rg -j1`).
 - No memory maps; files are always read incrementally.
-- On wasm: no subprocesses (`--pre`, `-z/--search-zip` fall back to reading
-  files directly), no file timestamps (`--sort modified` etc. are
-  unsupported), and stdin is only searched when `-` is given explicitly.
+- On wasm:
+  - No subprocesses: `--pre` reports that the preprocessor could not start,
+    and `-z/--search-zip` searches compressed files as-is (as ripgrep does
+    when the decompression tool isn't installed).
+  - No file timestamps: `--sort modified` etc. report that sorting isn't
+    supported.
+  - Stdin is only searched when `-` is given explicitly (ripgrep built for
+    WASI behaves the same way, since the type of stdin can't be queried).
+  - Only preopened directories are reachable. `wasmtime run --dir . --dir /`
+    gives full access (except to symlinks with absolute targets); `moonrun`
+    only exposes the current directory, so ignore files in parent
+    directories and absolute paths outside it are not visible.
