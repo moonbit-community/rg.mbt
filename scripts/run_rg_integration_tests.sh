@@ -4,6 +4,12 @@
 #
 # Usage: scripts/run_rg_integration_tests.sh [native|wasm] [test filter...]
 #
+# On wasm, the tests that cannot pass under WASI are skipped unless test
+# filters are given (or RG_NO_SKIP=1): 10 need to spawn processes
+# (decompression, --pre), 3 rely on stdin being detected as readable when no
+# path is given, and 5 search symlinks with absolute targets, which
+# wasmtime's sandbox refuses to read.
+#
 # Requires a ripgrep checkout in .repos/ripgrep and a Rust toolchain that can
 # build it (ripgrep 15.2 needs rustc >= 1.96; override with RG_TOOLCHAIN).
 set -e
@@ -49,4 +55,18 @@ EOS
     exit 1
     ;;
 esac
+if [ "$target" = wasm ] && [ $# -eq 0 ] && [ -z "$RG_NO_SKIP" ]; then
+  for t in \
+    misc::compressed_brotli misc::compressed_bzip2 misc::compressed_failing_gzip \
+    misc::compressed_gzip misc::compressed_lz4 misc::compressed_lzma \
+    misc::compressed_xz misc::compressed_zstd \
+    misc::preprocessing misc::preprocessing_glob \
+    binary::after_match1_stdin multiline::stdin \
+    regression::r1223_no_dir_check_for_default_path \
+    misc::symlink_follow regression::r137 regression::r256 regression::r256_j1 \
+    regression::r1389_bad_symlinks_no_biscuit; do
+    set -- "$@" --skip "$t"
+  done
+  set -- "$@" --exact
+fi
 exec "$testbin" "$@"

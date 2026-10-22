@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Versions
+        run: |
+          moon version --all
+          moon update
+
+      - name: Check formatting and interfaces
+        run: |
+          moon check
+          moon fmt --check
+          moon info
+          git diff --exit-code
+
+      - name: Test (native)
+        run: moon test --target native
+
+      - name: Test (wasm)
+        run: moon test --target wasm
+
+      - name: Build rg
+        run: |
+          moon build --release --target native cmd/rg
+          moon build --release --target wasm cmd/rg
+
+  # Runs ripgrep's own integration test suite against this port.
+  integration:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # The ripgrep revision this port follows (15.2.0 + ignore-0.4.33).
+      RIPGREP_REV: 3fce3b5bb0236da2df6d99672afb8a719642eca7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust
+        run: rustup toolchain install 1.97.1 --profile minimal
+
+      - name: Install wasmtime
+        run: |
+          curl -fsSL https://wasmtime.dev/install.sh | bash
+          echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch ripgrep
+        run: |
+          git init -q .repos/ripgrep
+          git -C .repos/ripgrep fetch -q --depth 1 https://github.com/BurntSushi/ripgrep "$RIPGREP_REV"
+          git -C .repos/ripgrep checkout -q FETCH_HEAD
+
+      - name: Integration tests (native)
+        run: scripts/run_rg_integration_tests.sh native
+
+      - name: Integration tests (wasm, wasmtime)
+        run: scripts/run_rg_integration_tests.sh wasm

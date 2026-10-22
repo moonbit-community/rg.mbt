@@ -10,6 +10,17 @@ It builds for two backends:
 - **wasm** (linear-memory WebAssembly): uses a subset of WASI preview 1 that
   is supported by both `wasmtime` and MoonBit's own `moonrun`.
 
+## Installing
+
+The module is published on [mooncakes.io](https://mooncakes.io) as
+`moonbit-community/rg`. To build the `rg` binary from source:
+
+```sh
+git clone https://github.com/moonbit-community/rg.mbt
+cd rg.mbt
+moon build --release cmd/rg
+```
+
 ## Building and running
 
 ```sh
@@ -64,10 +75,11 @@ scripts/run_rg_integration_tests.sh native   # 323/323 pass
 scripts/run_rg_integration_tests.sh wasm     # 305/323 pass (wasmtime)
 ```
 
-The 18 wasm failures are all due to WASI rather than the port: 9 need to
-spawn a process (`-z/--search-zip`, `--pre`), 3 rely on stdin being detected
-as readable when no path is given, and 6 search symlinks with absolute
-targets, which wasmtime's sandbox refuses to read.
+The 18 tests that fail on wasm are all due to WASI rather than the port, and
+the script skips them: 10 need to spawn a process (`-z/--search-zip`,
+`--pre`), 3 rely on stdin being detected as readable when no path is given,
+and 5 search symlinks with absolute targets, which wasmtime's sandbox refuses
+to read.
 
 ## Performance
 
