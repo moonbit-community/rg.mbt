@@ -533,6 +533,24 @@ fn dot_preopen() -> Int32? {
 }
 
 ///|
+/// Lexically normalizes an absolute path: removes empty and `.` components
+/// and resolves `..` against the preceding component.
+fn normalize_abs(path : String) -> String {
+  let parts : Array[String] = []
+  for c in path.split("/") {
+    let c = c.to_string()
+    if c == "" || c == "." {
+      continue
+    } else if c == ".." {
+      ignore(parts.pop())
+    } else {
+      parts.push(c)
+    }
+  }
+  "/" + parts.join("/")
+}
+
+///|
 /// Maps `path` to a preopened directory fd and a path relative to it.
 fn resolve(path : String) -> (Int32, String) raise IOError {
   if path == "" {
@@ -555,6 +573,17 @@ fn resolve(path : String) -> (Int32, String) raise IOError {
   }
   if best_preopen(p, false) is Some(r) {
     return r
+  }
+  // A path escaping the current directory (e.g. `../x`) can't be opened
+  // through the `.` preopen, so go through an absolute preopen instead.
+  if p.split("/").any(c => c == "..") {
+    match env_var("PWD") {
+      Some(pwd) if pwd.has_prefix("/") =>
+        if best_preopen(normalize_abs(pwd + "/" + p), true) is Some(r) {
+          return r
+        }
+      _ => ()
+    }
   }
   if dot_preopen() is Some(dot) {
     return (dot, p)
@@ -809,6 +838,11 @@ pub fn metadata(path : String) -> Metadata raise IOError {
 /// Metadata for `path`, without following a final symlink.
 pub fn symlink_metadata(path : String) -> Metadata raise IOError {
   let (dirfd, rel) = resolve(path)
+  // moonrun refuses to readlink a preopened directory itself (`notcapable`),
+  // which is never a symlink anyway.
+  if rel == "." {
+    return probe_type(dirfd, rel, false)
+  }
   match readlink_at(dirfd, rel) {
     Ok(target) =>
       {
