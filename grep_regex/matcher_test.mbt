@@ -80,7 +80,7 @@ test "find iter and captures" {
   })
   debug_inspect(found, content="[{ start: 3, end: 8 }, { start: 9, end: 14 }]")
   let caps = @matcher.Matcher::new_captures(m)
-  inspect(@matcher.Matcher::capture_index(m, "w"), content="Some(1)")
+  debug_inspect(@matcher.Matcher::capture_index(m, "w"), content="Some(1)")
   inspect(
     @matcher.Matcher::captures_at(m, h, 0, h.length(), 4, caps),
     content="true",

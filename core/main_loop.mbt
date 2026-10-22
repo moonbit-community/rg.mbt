@@ -7,7 +7,7 @@ fn is_broken_pipe(e : Error) -> Bool {
 }
 
 ///|
-fn HiArgs::walk_builder(self : HiArgs) -> @ignore.WalkBuilder raise RgError {
+fn HiArgs::walk_builder(self : HiArgs) -> @ignore.WalkBuilder {
   let builder = @ignore.WalkBuilder::new(self.paths.paths[0])
   for i in 1..<self.paths.paths.length() {
     ignore(builder.add(self.paths.paths[i]))
@@ -50,7 +50,7 @@ fn HiArgs::walk_builder(self : HiArgs) -> @ignore.WalkBuilder raise RgError {
 
 ///|
 /// Collects haystacks from the walker, applying any requested sorting.
-fn HiArgs::haystacks(self : HiArgs) -> Iter[Haystack] raise RgError {
+fn HiArgs::haystacks(self : HiArgs) -> Iter[Haystack] {
   let builder = self.haystack_builder()
   let walk = self.walk_builder().build()
   let unsorted = Iter::new(fn() {
@@ -120,7 +120,7 @@ fn compare_paths(a : String, b : String) -> Int32 {
 ///|
 fn path_components(p : String) -> Array[String] {
   let out = []
-  let parts = p.split("/").map(s => s.to_string()).collect()
+  let parts = p.split("/").map(s => s.to_owned()).collect()
   for i, part in parts {
     if part.is_empty() {
       if i == 0 {
@@ -197,7 +197,7 @@ fn run_search(args : HiArgs, mode : SearchMode) -> Bool raise {
       _ => ()
     }
   }
-  worker.printer.get_mut().flush() catch {
+  @termcolor.Write::flush(worker.printer.get_mut()) catch {
     e => if !is_broken_pipe(e) { raise e }
   }
   matched
@@ -215,15 +215,11 @@ fn run_files(args : HiArgs) -> Bool raise {
       break
     }
     path_printer.write(haystack.path()) catch {
-      e => {
-        if is_broken_pipe(e) {
-          break
-        }
-        raise e
-      }
+      e if is_broken_pipe(e) => break
+      e => raise e
     }
   }
-  stdout.flush() catch {
+  @termcolor.Write::flush(stdout) catch {
     e => if !is_broken_pipe(e) { raise e }
   }
   matched
@@ -282,5 +278,5 @@ fn print_stats(
     "\n\{stats.matches()} matches\n\{stats.matched_lines()} matched lines\n\{stats.searches_with_match()} files contained matches\n\{stats.searches()} files searched\n\{stats.bytes_printed()} bytes printed\n\{stats.bytes_searched()} bytes searched\n\{f(stats.elapsed())} seconds spent searching\n\{f(elapsed)} seconds total\n"
   }
   let bytes = @utf8.encode(text)
-  wtr.write_bytes(bytes[:])
+  @termcolor.Write::write_bytes(wtr, bytes[:])
 }

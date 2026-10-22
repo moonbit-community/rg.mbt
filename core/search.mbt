@@ -293,29 +293,19 @@ fn SearchWorker::search_path(
   path : String,
 ) -> SearchResult raise {
   let file = @sys.File::open(path)
-  let result = try {
-    // Where ripgrep would use a memory map (only possible for regular
-    // files), search the whole file as a slice: this matters because slices
-    // are searched differently (e.g. binary data isn't converted).
-    // (Files too big for an array are read incrementally instead.)
-    if self.mmap &&
-      (@sys.metadata(path).is_file() catch { _ => false }) &&
-      (@sys.file_len(path) catch { _ => -1L }) is (0L..<0x40000000L) {
-      let (buf, len) = read_all(file, path)
-      self.search_input(path, Slice(buf, len))
-    } else {
-      self.search_input(path, Reader(FileReader::{ file, }))
-    }
-  } catch {
-    e => {
-      file.close()
-      raise e
-    }
-  } noraise {
-    r => r
+  defer file.close()
+  // Where ripgrep would use a memory map (only possible for regular
+  // files), search the whole file as a slice: this matters because slices
+  // are searched differently (e.g. binary data isn't converted).
+  // (Files too big for an array are read incrementally instead.)
+  if self.mmap &&
+    (@sys.metadata(path).is_file() catch { _ => false }) &&
+    (@sys.file_len(path) catch { _ => -1L }) is (0L..<0x40000000L) {
+    let (buf, len) = read_all(file, path)
+    self.search_input(path, Slice(buf, len))
+  } else {
+    self.search_input(path, Reader(FileReader::{ file, }))
   }
-  file.close()
-  result
 }
 
 ///|

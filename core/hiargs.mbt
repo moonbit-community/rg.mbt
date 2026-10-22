@@ -155,7 +155,7 @@ fn patterns_from_low(
     let pat = low.positional.remove(0)
     return [pat]
   }
-  let seen : Map[String, Unit] = {}
+  let seen : Map[String, Unit] = Map([])
   let patterns = []
   let add = (pat : String) => {
     if !seen.contains(pat) {
@@ -357,7 +357,7 @@ fn hostname(bin : String?) -> String? {
     _ => return @cli.hostname()
   }
   let out = rdr.read_to_end() catch { _ => return @cli.hostname() }
-  let host = @utf8.decode_lossy(out).trim().to_string()
+  let host = @utf8.decode_lossy(out).trim().to_owned()
   if host.is_empty() {
     return @cli.hostname()
   }

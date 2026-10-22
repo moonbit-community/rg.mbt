@@ -62,7 +62,7 @@ fn generate_short_flag(flag : FlagDef) -> (String, String) {
 ///|
 /// Generates the `-h` output.
 pub fn generate_help_short() -> String {
-  let cats : Map[String, (Array[String], Array[String])] = {}
+  let cats : Map[String, (Array[String], Array[String])] = Map([])
   let mut maxcol1 = 0
   for flag in flag_defs {
     let key = flag.doc_category.as_str()
@@ -134,18 +134,18 @@ fn render_custom_markup(
 fn remove_roff(v : String) -> String {
   let lines : Array[String] = []
   for line in v.trim().split("\n") {
-    let line = line.to_string()
+    let line = line.to_owned()
     if line.has_prefix(".") {
       if line.has_prefix(".IP ") {
         let label = line.split(" ").collect()[1]
-          .to_string()
+          .to_owned()
           .replace_all(old="\\(bu", new="•")
           .replace_all(old="\\fB", new="")
           .replace_all(old="\\fP", new=":")
         lines.push(label)
       } else if line.has_prefix(".IB ") || line.has_prefix(".BI ") {
         let pieces = line.split(" ").filter(s => !s.is_empty()).collect()
-        lines.push(pieces[1:].map(s => s.to_string()).join(""))
+        lines.push(pieces[1:].map(s => s.to_owned()).join(""))
       } else if line.has_prefix(".sp") ||
         line.has_prefix(".PP") ||
         line.has_prefix(".TP") {
@@ -196,7 +196,7 @@ fn generate_long_flag(flag : FlagDef, out : StringBuilder) -> Unit {
     out.write_string("=\{dv}")
   }
   out.write_char('\n')
-  let doc = flag.doc_long.trim().to_string()
+  let doc = flag.doc_long.trim().to_owned()
   let doc = render_custom_markup(doc, "flag", (name, out) => {
     guard lookup_flag(name) is Some(f) else {
       abort("found unrecognized \\flag{\{name}} in --help docs")
@@ -221,7 +221,7 @@ fn generate_long_flag(flag : FlagDef, out : StringBuilder) -> Unit {
   }
   let indent = "        "
   for i, paragraph in cleaned.split("\n\n").collect() {
-    let paragraph = paragraph.to_string()
+    let paragraph = paragraph.to_owned()
     if i > 0 {
       out.write_string("\n\n")
     }
@@ -233,14 +233,14 @@ fn generate_long_flag(flag : FlagDef, out : StringBuilder) -> Unit {
       new = tw_refill(new, 71)
       new = tw_indent(new, indent)
     }
-    out.write_string(new.trim_end().to_string())
+    out.write_string(new.trim_end().to_owned())
   }
 }
 
 ///|
 /// Generates the `--help` output.
 pub fn generate_help_long() -> String {
-  let cats : Map[String, StringBuilder] = {}
+  let cats : Map[String, StringBuilder] = Map([])
   for flag in flag_defs {
     let key = flag.doc_category.as_str()
     if !cats.contains(key) {
@@ -272,7 +272,7 @@ pub fn generate_help_long() -> String {
 /// Splits a string into lines like Rust's `str::lines`: a trailing newline
 /// does not produce a final empty line, and `\r\n` endings are stripped.
 fn rust_lines(s : String) -> Array[String] {
-  let out = s.split("\n").map(l => l.to_string()).collect()
+  let out = s.split("\n").map(l => l.to_owned()).collect()
   if s.has_suffix("\n") {
     ignore(out.pop())
   }

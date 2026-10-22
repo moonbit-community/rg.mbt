@@ -90,10 +90,10 @@ pub fn generate_complete_bash() -> String {
     let template = if !flag.doc_choices.is_empty() {
       bash_template_case_choices
       .trim_end()
-      .to_string()
+      .to_owned()
       .replace_all(old="!CHOICES!", new=flag.doc_choices.join(" "))
     } else {
-      bash_template_case.trim_end().to_string()
+      bash_template_case.trim_end().to_owned()
     }
     cases.write_string(
       template.replace_all(old="!FLAG!", new="--\{flag.name_long}"),
@@ -109,7 +109,7 @@ pub fn generate_complete_bash() -> String {
   .replace_all(old="!OPTS!", new=opts.to_string())
   .replace_all(old="!CASES!", new=cases.to_string())
   .trim_start()
-  .to_string()
+  .to_owned()
 }
 
 ///|
@@ -171,7 +171,7 @@ pub fn generate_complete_zsh() -> String {
   complete_zsh_template
   .replace_all(
     old="!ENCODINGS!",
-    new=complete_encodings_sh.trim_end().to_string(),
+    new=complete_encodings_sh.trim_end().to_owned(),
   )
   .replace_all(old="!HYPERLINK_ALIASES!", new=aliases)
 }
@@ -232,6 +232,6 @@ pub fn generate_complete_powershell() -> String {
   }
   powershell_template
   .trim_start()
-  .to_string()
+  .to_owned()
   .replace_all(old="!FLAGS!", new=flags.to_string())
 }

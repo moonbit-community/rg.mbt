@@ -39,7 +39,6 @@ pub fn RegexConfig::default() -> RegexConfig {
 /// leftmost-first semantics (like Rust's regex crate).
 pub struct Regex {
   priv hir : @syntax.Hir
-  priv nfa : @automata.NFA
   priv pikevm : @automata.PikeVM
   priv fwd : @automata.LazyDFA
   priv rev : @automata.LazyDFA
@@ -95,7 +94,6 @@ pub fn Regex::from_hir(
   }
   {
     hir,
-    nfa,
     pikevm: @automata.PikeVM::new(nfa),
     fwd: @automata.LazyDFA::new(nfa, state_limit=config.dfa_state_limit),
     rev: @automata.LazyDFA::new(

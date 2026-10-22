@@ -169,56 +169,6 @@ fn Sunk::empty() -> Sunk {
 }
 
 ///|
-fn Sunk::from_sink_match(
-  sunk : @searcher.SinkMatch,
-  original_matches : Array[@matcher.Match],
-  replacement : (@termcolor.ByteVec, Array[@matcher.Match])?,
-) -> Sunk {
-  let (buf, start, end, matches) = match replacement {
-    Some((dst, ms)) => (dst.storage(), 0, dst.length(), ms)
-    None =>
-      (
-        sunk.buf,
-        sunk.buf_start + sunk.start,
-        sunk.buf_start + sunk.end,
-        original_matches,
-      )
-  }
-  {
-    buf,
-    start,
-    end,
-    absolute_byte_offset: sunk.absolute_byte_offset,
-    line_number: sunk.line_number,
-    context_kind: None,
-    matches,
-    original_matches,
-  }
-}
-
-///|
-fn Sunk::from_sink_context(
-  sunk : @searcher.SinkContext,
-  original_matches : Array[@matcher.Match],
-  replacement : (@termcolor.ByteVec, Array[@matcher.Match])?,
-) -> Sunk {
-  let (buf, start, end, matches) = match replacement {
-    Some((dst, ms)) => (dst.storage(), 0, dst.length(), ms)
-    None => (sunk.buf, sunk.start, sunk.end, original_matches)
-  }
-  {
-    buf,
-    start,
-    end,
-    absolute_byte_offset: sunk.absolute_byte_offset,
-    line_number: sunk.line_number,
-    context_kind: Some(sunk.kind),
-    matches,
-    original_matches,
-  }
-}
-
-///|
 /// Shared empty values for `Sunk::set_empty` (never mutated).
 let empty_buf : FixedArray[Byte] = []
 
@@ -239,7 +189,7 @@ fn Sunk::set_empty(self : Sunk) -> Unit {
 }
 
 ///|
-/// Sets `self` to `Sunk::from_sink_match(...)` without allocating.
+/// Sets `self` to the data of a matching line.
 fn Sunk::set_match(
   self : Sunk,
   sunk : @searcher.SinkMatch,
@@ -267,7 +217,7 @@ fn Sunk::set_match(
 }
 
 ///|
-/// Sets `self` to `Sunk::from_sink_context(...)` without allocating.
+/// Sets `self` to the data of a context line.
 fn Sunk::set_context(
   self : Sunk,
   sunk : @searcher.SinkContext,
@@ -356,12 +306,6 @@ fn PrinterPath::as_hyperlink(
       h
     }
   }
-}
-
-///|
-/// Formats a nonnegative integer as ASCII decimal digits.
-fn decimal(n : Int64) -> String {
-  n.reinterpret_as_uint64().to_string()
 }
 
 ///|

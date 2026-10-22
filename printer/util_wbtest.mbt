@@ -5,7 +5,11 @@ test "custom_decimal_format" {
     "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "20", "100", "123", "18446744073709551615",
   ]
   for i, n in ints {
-    assert_eq(decimal(n), expected[i])
+    let start = format_decimal(n)
+    let got = String::from_array(
+      decimal_scratch[start:].iter().map(b => b.to_char()).collect(),
+    )
+    assert_eq(got, expected[i])
   }
 }
 

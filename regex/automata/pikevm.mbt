@@ -112,7 +112,6 @@ pub fn PikeVM::search_slots(
 ) -> Bool {
   self.hs = hs
   self.he = he
-  let len = he
   let nslots = if slots.length() < self.cache_slots {
     slots.length()
   } else {
@@ -149,9 +148,9 @@ pub fn PikeVM::search_slots(
       for i in 0..<nslots {
         scratch[i] = -1
       }
-      self.epsilon_closure(scratch, self.curr, hay, len, at, start_id)
+      self.epsilon_closure(scratch, self.curr, hay, at, start_id)
     }
-    if self.nexts(hay, len, end, at, slots, nslots) {
+    if self.nexts(hay, end, at, slots, nslots) {
       matched = true
     }
     if earliest && matched {
@@ -170,7 +169,6 @@ pub fn PikeVM::search_slots(
 fn PikeVM::nexts(
   self : PikeVM,
   hay : FixedArray[Byte],
-  len : Int32,
   end : Int32,
   at : Int32,
   slots : FixedArray[Int32],
@@ -192,7 +190,7 @@ fn PikeVM::nexts(
         if at < end {
           let b = hay[at].to_int()
           if b >= lo && b <= hi {
-            self.closure_from_state(sid, hay, len, at + 1, next, nslots)
+            self.closure_from_state(sid, hay, at + 1, next, nslots)
           }
         }
       Sparse(ts) =>
@@ -203,7 +201,7 @@ fn PikeVM::nexts(
               break
             }
             if b <= t.end {
-              self.closure_from_state(sid, hay, len, at + 1, t.next, nslots)
+              self.closure_from_state(sid, hay, at + 1, t.next, nslots)
               break
             }
           }
@@ -219,7 +217,6 @@ fn PikeVM::closure_from_state(
   self : PikeVM,
   sid : Int32,
   hay : FixedArray[Byte],
-  len : Int32,
   at : Int32,
   next : Int32,
   nslots : Int32,
@@ -231,7 +228,7 @@ fn PikeVM::closure_from_state(
   for j in 0..<nslots {
     scratch[j] = self.curr.slots[base + j]
   }
-  self.epsilon_closure(scratch, self.next, hay, len, at, next)
+  self.epsilon_closure(scratch, self.next, hay, at, next)
 }
 
 ///|
@@ -240,7 +237,6 @@ fn PikeVM::epsilon_closure(
   slots : FixedArray[Int32],
   target : ActiveStates,
   hay : FixedArray[Byte],
-  len : Int32,
   at : Int32,
   sid : Int32,
 ) -> Unit {

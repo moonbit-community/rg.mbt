@@ -32,7 +32,7 @@ fn Lit::keep_first(self : Lit, len : Int32) -> Lit {
   if len >= self.len() {
     self
   } else {
-    { bytes: self.bytes[0:len].to_bytes(), exact: false, }
+    { bytes: self.bytes[0:len].to_owned(), exact: false, }
   }
 }
 
@@ -41,7 +41,7 @@ fn Lit::keep_last(self : Lit, len : Int32) -> Lit {
   if len >= self.len() {
     self
   } else {
-    { bytes: self.bytes[self.len() - len:].to_bytes(), exact: false, }
+    { bytes: self.bytes[self.len() - len:].to_owned(), exact: false, }
   }
 }
 
@@ -337,7 +337,7 @@ pub fn Seq::longest_common_prefix(self : Seq) -> Bytes? {
       return Some(b"")
     }
   }
-  Some(base[0:len].to_bytes())
+  Some(base[0:len].to_owned())
 }
 
 ///|
@@ -358,7 +358,7 @@ pub fn Seq::longest_common_suffix(self : Seq) -> Bytes? {
       return Some(b"")
     }
   }
-  Some(base[base.length() - len:].to_bytes())
+  Some(base[base.length() - len:].to_owned())
 }
 
 ///|

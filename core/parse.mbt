@@ -1,16 +1,12 @@
 ///|
-priv enum FlagInfoKind {
-  Standard
-  Negated
-  Alias
-}
 
 ///|
 priv struct FlagInfo {
   flag : FlagDef
   /// `Ok(long name)` or `Err(short name)`.
   name : Result[String, Char]
-  kind : FlagInfoKind
+  /// Whether this is the negated form of the flag (e.g. `--no-foo`).
+  negated : Bool
 }
 
 ///|
@@ -37,18 +33,18 @@ fn FlagParser::get() -> FlagParser {
     None => {
       let infos : Array[FlagInfo] = []
       for flag in flag_defs {
-        infos.push({ flag, name: Ok(flag.name_long), kind: Standard, })
-        for alias in flag.aliases {
-          infos.push({ flag, name: Ok(alias), kind: Alias, })
+        infos.push({ flag, name: Ok(flag.name_long), negated: false, })
+        for alias_name in flag.aliases {
+          infos.push({ flag, name: Ok(alias_name), negated: false, })
         }
         if flag.name_short is Some(c) {
-          infos.push({ flag, name: Err(c), kind: Standard, })
+          infos.push({ flag, name: Err(c), negated: false, })
         }
         if flag.name_negated is Some(name) {
-          infos.push({ flag, name: Ok(name), kind: Negated, })
+          infos.push({ flag, name: Ok(name), negated: true, })
         }
       }
-      let map = {}
+      let map = Map([])
       for i, info in infos {
         let key = match info.name {
           Ok(name) => name
@@ -140,7 +136,7 @@ pub fn parse_into(
           }
         }
     }
-    let value = if mat.kind is Negated {
+    let value = if mat.negated {
       Switch(false)
     } else if mat.flag.is_switch {
       Switch(true)
@@ -212,7 +208,7 @@ fn jaccard_index(a : Map[String, Unit], b : Map[String, Unit]) -> Double {
 ///|
 fn ngrams(name : String) -> Map[String, Unit] {
   let bytes = @utf8.encode(name)
-  let set : Map[String, Unit] = {}
+  let set : Map[String, Unit] = Map([])
   let key = (b : BytesView) => {
     let buf = StringBuilder()
     for x in b {

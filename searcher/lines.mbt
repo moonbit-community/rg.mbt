@@ -75,7 +75,7 @@ pub fn lines_of(bytes : Bytes, line_term : Byte) -> Array[Bytes] {
   let step = LineStep::new(line_term, 0, buf.length())
   let out = []
   while step.next(buf, 0) is Some(m) {
-    out.push(bytes[m.start:m.end].to_bytes())
+    out.push(bytes[m.start:m.end].to_owned())
   }
   out
 }

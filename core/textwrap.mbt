@@ -116,7 +116,7 @@ fn tw_wrap_single_line(
 ) -> Unit {
   let indent = if lines.is_empty() { initial_indent } else { subsequent_indent }
   if utf8_byte_len(line) < width && indent.is_empty() {
-    lines.push(line.trim_end(chars=" ").to_string())
+    lines.push(line.trim_end(chars=" ").to_owned())
     return
   }
   let initial_width = width - char_count(initial_indent)
@@ -177,12 +177,12 @@ fn tw_fill(
   if utf8_byte_len(text) < width &&
     !text.contains("\n") &&
     initial_indent.is_empty() {
-    return text.trim_end(chars=" ").to_string()
+    return text.trim_end(chars=" ").to_owned()
   }
   let lines = []
   for line in text.split("\n") {
     tw_wrap_single_line(
-      line.to_string(),
+      line.to_owned(),
       width,
       initial_indent,
       subsequent_indent,
@@ -209,7 +209,7 @@ fn tw_refill(filled_text : String, width : Int32) -> String {
   // unfill
   let mut initial_indent = ""
   let mut subsequent_indent = ""
-  let text_lines = filled_text.split("\n").map(s => s.to_string()).collect()
+  let text_lines = filled_text.split("\n").map(s => s.to_owned()).collect()
   if text_lines.length() > 0 && text_lines[text_lines.length() - 1] == "" {
     ignore(text_lines.pop())
   }
@@ -272,8 +272,8 @@ fn tw_refill(filled_text : String, width : Int32) -> String {
 /// textwrap's `indent(s, prefix)`.
 fn tw_indent(s : String, prefix : String) -> String {
   let result = StringBuilder()
-  let trimmed_prefix = prefix.trim_end().to_string()
-  let parts = s.split("\n").map(x => x.to_string()).collect()
+  let trimmed_prefix = prefix.trim_end().to_owned()
+  let parts = s.split("\n").map(x => x.to_owned()).collect()
   if s.has_suffix("\n") {
     ignore(parts.pop())
   }

@@ -100,7 +100,7 @@ pub fn CommandReader::close(self : CommandReader) -> Unit raise CommandError {
 pub fn CommandReader::read_to_end(
   self : CommandReader,
 ) -> Bytes raise CommandError {
-  let out = self.output.stdout[self.pos:].to_bytes()
+  let out = self.output.stdout[self.pos:].to_owned()
   self.pos = self.output.stdout.length()
   self.eof = true
   self.close()

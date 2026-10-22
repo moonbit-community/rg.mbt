@@ -75,7 +75,7 @@ fn special(mode : SpecialMode) -> Int32 raise @sys.IOError {
       output
     }
   }
-  write_stdout_str(output.trim_end().to_string() + "\n")
+  write_stdout_str(output.trim_end().to_owned() + "\n")
   exit
 }
 
@@ -88,7 +88,7 @@ fn generate(mode : GenerateMode) -> Int32 raise @sys.IOError {
     CompleteFish => generate_complete_fish()
     CompletePowerShell => generate_complete_powershell()
   }
-  write_stdout_str(output.trim_end().to_string() + "\n")
+  write_stdout_str(output.trim_end().to_owned() + "\n")
   0
 }
 

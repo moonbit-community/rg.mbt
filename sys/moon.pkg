@@ -1,10 +1,10 @@
 import {
-  "moonbitlang/core/encoding/utf8",
   "moonbit-community/rg/osstr",
 }
 
 import {
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/cmp",
 } for "test"
 
 supported_targets = "native+wasm"

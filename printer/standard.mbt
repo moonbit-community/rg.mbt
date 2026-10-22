@@ -1190,18 +1190,6 @@ fn StandardImpl::write_spec(
 }
 
 ///|
-fn StandardImpl::write_spec_bytes(
-  self : StandardImpl,
-  spec : @termcolor.ColorSpec,
-  bytes : Bytes,
-) -> Unit raise {
-  let wtr = self.wtr()
-  wtr.set_color(spec)
-  wtr.write_bytes(bytes)
-  wtr.reset()
-}
-
-///|
 /// Writes `n` in decimal with the given color.
 fn StandardImpl::write_spec_decimal(
   self : StandardImpl,

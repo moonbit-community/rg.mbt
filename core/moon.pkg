@@ -12,3 +12,5 @@ import {
 }
 
 warnings = "-implicit_impl_as_method"
+
+supported_targets = "native+wasm"

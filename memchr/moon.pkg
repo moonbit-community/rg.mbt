@@ -2,4 +2,7 @@ import {
   "moonbitlang/core/v128",
 }
 
-warnings = "-implicit_impl_as_method"
+// `moonbitlang/core/v128` (SIMD) is marked experimental; using it is the
+// point of this package.
+
+warnings = "-implicit_impl_as_method-alert_experimental"

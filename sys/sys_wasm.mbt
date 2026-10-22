@@ -546,7 +546,7 @@ fn dot_preopen() -> Int32? {
 fn normalize_abs(path : String) -> String {
   let parts : Array[String] = []
   for c in path.split("/") {
-    let c = c.to_string()
+    let c = c.to_owned()
     if c == "" || c == "." {
       continue
     } else if c == ".." {

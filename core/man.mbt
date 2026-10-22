@@ -14,7 +14,7 @@ fn generate_man_flag(flag : FlagDef, out : StringBuilder) -> Unit {
   }
   out.write_string("\n")
   out.write_string(".RS 4\n")
-  let doc = flag.doc_long.trim().to_string()
+  let doc = flag.doc_long.trim().to_owned()
   let doc = render_custom_markup(doc, "flag", (name, out) => {
     guard lookup_flag(name) is Some(f) else {
       abort("found unrecognized \\flag{\{name}} in roff docs")
@@ -49,7 +49,7 @@ fn generate_man_flag(flag : FlagDef, out : StringBuilder) -> Unit {
 ///|
 /// Generates ripgrep's man page in roff format.
 pub fn generate_man_page() -> String {
-  let cats : Map[String, StringBuilder] = {}
+  let cats : Map[String, StringBuilder] = Map([])
   for flag in flag_defs {
     let key = flag.doc_category.as_str()
     if !cats.contains(key) {

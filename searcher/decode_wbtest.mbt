@@ -49,7 +49,7 @@ fn decode_chunked(
   let out = Buffer()
   let buf = FixedArray::make(1000, b'\x00')
   for ;; {
-    let n = rdr.read(buf, 0, buf.length())
+    let n = Reader::read(rdr, buf, 0, buf.length())
     if n == 0 {
       break
     }
@@ -605,7 +605,7 @@ test "decoders match encoding_rs on generated corpora" {
   let pairs = corpus_pairs()
   let gb4 = corpus_gb4()
   let random = corpus_random(200000)
-  let random_small = random[0:20000].to_bytes()
+  let random_small = random[0:20000].to_owned()
   let iso = corpus_iso(100000)
   let odd_sizes = [1, 2, 3, 5, 7, 11, 13, 4096]
   for entry in encoding_rs_hashes {

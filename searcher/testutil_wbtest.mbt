@@ -62,7 +62,7 @@ impl @matcher.Matcher for TestMatcher with fn find_candidate_line(
     }
     Some(Candidate(i))
   } else {
-    match self.shortest_match_at(hay, hs, he, 0) {
+    match @matcher.Matcher::shortest_match_at(self, hay, hs, he, 0) {
       Some(e) => Some(Confirmed(e))
       None => None
     }
@@ -136,9 +136,9 @@ struct SearcherTester {
   mut expected_no_line_number : String?
   mut expected_with_line_number : String?
   mut expected_slice_no_line_number : String?
-  mut expected_slice_with_line_number : String?
+  expected_slice_with_line_number : String?
   mut by_line : Bool
-  mut multi_line : Bool
+  multi_line : Bool
   mut invert_match : Bool
   mut line_number : Bool
   mut binary : BinaryDetection
@@ -197,15 +197,6 @@ fn SearcherTester::expected_slice_no_line_number(
 }
 
 ///|
-fn SearcherTester::expected_slice_with_line_number(
-  self : SearcherTester,
-  exp : String,
-) -> SearcherTester {
-  self.expected_slice_with_line_number = Some(exp)
-  self
-}
-
-///|
 fn SearcherTester::line_number(
   self : SearcherTester,
   yes : Bool,
@@ -217,15 +208,6 @@ fn SearcherTester::line_number(
 ///|
 fn SearcherTester::by_line(self : SearcherTester, yes : Bool) -> SearcherTester {
   self.by_line = yes
-  self
-}
-
-///|
-fn SearcherTester::multi_line(
-  self : SearcherTester,
-  yes : Bool,
-) -> SearcherTester {
-  self.multi_line = yes
   self
 }
 
@@ -288,7 +270,7 @@ fn SearcherTester::passthru(
 fn rust_lines(s : String) -> Array[String] {
   let out = []
   for part in s.split("\n") {
-    out.push(part.to_string())
+    out.push(part.to_owned())
   }
   if out.length() > 0 && out[out.length() - 1] == "" {
     ignore(out.pop())
