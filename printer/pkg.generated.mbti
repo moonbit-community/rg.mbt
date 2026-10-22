@@ -274,6 +274,7 @@ pub struct SummarySink {
 }
 pub fn SummarySink::binary_byte_offset(Self) -> Int64?
 pub fn SummarySink::has_match(Self) -> Bool
+pub fn SummarySink::match_count(Self) -> Int64
 pub fn SummarySink::stats(Self) -> Stats?
 pub impl @searcher.Sink for SummarySink
 

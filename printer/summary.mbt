@@ -341,6 +341,13 @@ pub fn SummarySink::has_match(self : SummarySink) -> Bool {
 }
 
 ///|
+/// Return the number of matches counted by this sink in the previous
+/// search. (In Rust this is a private field that the unit tests inspect.)
+pub fn SummarySink::match_count(self : SummarySink) -> Int64 {
+  self.match_count
+}
+
+///|
 /// If binary data was found in the previous search, this returns the
 /// offset at which the binary data was first detected.
 pub fn SummarySink::binary_byte_offset(self : SummarySink) -> Int64? {
