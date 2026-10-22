@@ -39,7 +39,17 @@ pub impl @termcolor.Write for StdoutWriter with fn write_slice(
   if self.len + len > self.buf.length() {
     self.flush_buf()
   }
-  data.blit_to(self.buf, len~, src_offset=start, dst_offset=self.len)
+  if len <= 16 {
+    // Tiny writes (separators, line numbers) are common: copying them
+    // directly is cheaper than a `memmove` call.
+    let buf = self.buf
+    let at = self.len
+    for i in 0..<len {
+      buf[at + i] = data[start + i]
+    }
+  } else {
+    data.blit_to(self.buf, len~, src_offset=start, dst_offset=self.len)
+  }
   self.len += len
   if self.line_buffered && @memchr.memchr(b'\n', data, start, end) >= 0 {
     self.flush_buf()
@@ -60,15 +70,19 @@ pub impl @termcolor.Write for StdoutWriter with fn write_bytes(self, bytes) {
   if self.len + len > self.buf.length() {
     self.flush_buf()
   }
-  let mut newline = false
+  let buf = self.buf
+  let at = self.len
   for i in 0..<len {
-    let b = bytes[i]
-    self.buf[self.len + i] = b
-    newline = newline || b == b'\n'
+    buf[at + i] = bytes[i]
   }
   self.len += len
-  if self.line_buffered && newline {
-    self.flush_buf()
+  if self.line_buffered {
+    for i in 0..<len {
+      if bytes[i] == b'\n' {
+        self.flush_buf()
+        break
+      }
+    }
   }
 }
 

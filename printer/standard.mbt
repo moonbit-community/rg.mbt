@@ -651,11 +651,22 @@ fn StandardImpl::new(
   searcher : @searcher.Searcher,
   sink : StandardSink,
 ) -> StandardImpl {
+  let imp = StandardImpl::reuse(searcher, sink)
+  imp.sunk.set_empty()
+  imp
+}
+
+///|
+/// Returns the sink's (reused) implementation object for a new line,
+/// leaving its `Sunk` for the caller to set.
+fn StandardImpl::reuse(
+  searcher : @searcher.Searcher,
+  sink : StandardSink,
+) -> StandardImpl {
   match sink.cache {
     Some(imp) => {
       imp.searcher = searcher
       imp.in_color_match = false
-      imp.sunk.set_empty()
       imp
     }
     None => {
@@ -678,7 +689,7 @@ fn StandardImpl::from_match(
   sink : StandardSink,
   mat : @searcher.SinkMatch,
 ) -> StandardImpl {
-  let imp = StandardImpl::new(searcher, sink)
+  let imp = StandardImpl::reuse(searcher, sink)
   imp.sunk.set_match(mat, sink.standard.matches, sink.replacer.replacement())
   imp
 }
@@ -689,7 +700,7 @@ fn StandardImpl::from_context(
   sink : StandardSink,
   ctx : @searcher.SinkContext,
 ) -> StandardImpl {
-  let imp = StandardImpl::new(searcher, sink)
+  let imp = StandardImpl::reuse(searcher, sink)
   imp.sunk.set_context(ctx, sink.standard.matches, sink.replacer.replacement())
   imp
 }
