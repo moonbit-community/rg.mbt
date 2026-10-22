@@ -1,0 +1,21 @@
+import {
+  "dii/rg/matcher",
+  "dii/rg/searcher",
+  "dii/rg/termcolor",
+  "dii/rg/regex/automata",
+  "dii/rg/regex/syntax",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/bigint",
+}
+
+import {
+  "dii/rg/grep_regex",
+  "moonbitlang/core/encoding/utf8",
+} for "test"
+
+import {
+  "dii/rg/grep_regex",
+  "moonbitlang/core/encoding/utf8",
+} for "wbtest"
+
+warnings = "-implicit_impl_as_method"
