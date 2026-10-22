@@ -1,0 +1,81 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/rg/regex/automata"
+
+import {
+  "dii/rg/regex/syntax",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn compile_nfa(@syntax.Hir, config? : NFAConfig) -> NFA raise BuildError
+
+pub fn is_word_byte(Int32) -> Bool
+
+pub fn look_matches(@syntax.Look, FixedArray[Byte], Int32, Int32, lineterm? : Int32) -> Bool
+
+pub fn utf8_sequences(Int32, Int32) -> Array[Array[(Int32, Int32)]]
+
+// Errors
+pub suberror BuildError {
+  TooBig(Int32)
+} derive(@debug.Debug)
+
+// Types and methods
+pub struct NFA {
+  states : Array[State]
+  start_anchored : Int32
+  start_unanchored : Int32
+  reverse : Bool
+  group_len : Int32
+  group_names : Array[String?]
+  look_set_any : @syntax.LookSet
+  has_empty : Bool
+  byte_classes : FixedArray[Int32]
+  byte_class_len : Int32
+}
+pub fn NFA::group_len(Self) -> Int32
+pub fn NFA::group_names(Self) -> Array[String?]
+pub fn NFA::is_reverse(Self) -> Bool
+pub fn NFA::look_set_any(Self) -> @syntax.LookSet
+pub fn NFA::start_anchored(Self) -> Int32
+pub fn NFA::start_unanchored(Self) -> Int32
+pub fn NFA::states(Self) -> Array[State]
+pub fn NFA::to_string(Self) -> String
+
+pub(all) struct NFAConfig {
+  reverse : Bool
+  captures : Bool
+  unanchored_prefix : Bool
+  size_limit : Int32?
+}
+pub fn NFAConfig::default() -> Self
+
+pub struct PikeVM {
+  nfa : NFA
+  // private fields
+}
+pub fn PikeVM::new(NFA) -> Self
+pub fn PikeVM::nfa(Self) -> NFA
+pub fn PikeVM::search_slots(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool, FixedArray[Int32]) -> Bool
+
+pub(all) enum State {
+  ByteRange(Int32, Int32, Int32)
+  Sparse(Array[Transition])
+  Look(@syntax.Look, Int32)
+  Union(Array[Int32])
+  BinaryUnion(Int32, Int32)
+  Capture(next~ : Int32, group~ : Int32, slot~ : Int32)
+  Fail
+  Match
+} derive(Eq, @debug.Debug)
+pub fn State::is_epsilon(Self) -> Bool
+
+pub(all) struct Transition {
+  start : Int32
+  end : Int32
+  next : Int32
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
