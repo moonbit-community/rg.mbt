@@ -251,6 +251,18 @@ pub fn args() -> Array[String] {
 ///|
 /// All environment variables.
 pub fn env_vars() -> Array[(String, String)] {
+  environ().copy()
+}
+
+///|
+/// WASI has no way to modify the environment, so it is read once.
+let environ_cache : Ref[Array[(String, String)]?] = { val: None, }
+
+///|
+fn environ() -> Array[(String, String)] {
+  if environ_cache.val is Some(env) {
+    return env
+  }
   let out = []
   for s in read_string_table(wasi_environ_sizes_get, wasi_environ_get) {
     match s.find("=") {
@@ -264,13 +276,14 @@ pub fn env_vars() -> Array[(String, String)] {
       None => out.push((s, ""))
     }
   }
+  environ_cache.val = Some(out)
   out
 }
 
 ///|
 /// The value of the environment variable `name`, if set.
 pub fn env_var(name : String) -> String? {
-  for kv in env_vars() {
+  for kv in environ() {
     if kv.0 == name {
       return Some(kv.1)
     }
