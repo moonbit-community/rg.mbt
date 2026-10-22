@@ -7,13 +7,65 @@ import {
 }
 
 // Values
+pub fn config_args() -> Array[String]
+
+pub fn eprintln_locked(String) -> Unit
+
+pub fn err_message(String) -> Unit
+
+pub fn errored() -> Bool
+
 pub let flag_defs : Array[FlagDef]
 
+pub fn generate_complete_bash() -> String
+
+pub fn generate_complete_fish() -> String
+
+pub fn generate_complete_powershell() -> String
+
+pub fn generate_complete_zsh() -> String
+
+pub fn generate_help_long() -> String
+
+pub fn generate_help_short() -> String
+
+pub fn generate_man_page() -> String
+
+pub fn generate_version_digits() -> String
+
+pub fn generate_version_long() -> String
+
+pub fn generate_version_pcre2() -> (String, Bool)
+
+pub fn generate_version_short() -> String
+
+pub fn ignore_message(String) -> Unit
+
+pub fn ignore_messages() -> Bool
+
+pub fn log_debug(String, String) -> Unit
+
+pub fn log_trace(String, String) -> Unit
+
 pub fn lookup_flag(String) -> FlagDef?
+
+pub fn message(String) -> Unit
+
+pub fn messages() -> Bool
+
+pub fn parse_config_bytes(Bytes) -> (Array[String], Array[String])
 
 pub fn parse_into(Array[String], LowArgs) -> Unit raise RgError
 
 pub fn parse_low_raw(Array[String]) -> LowArgs raise RgError
+
+pub let rg_version : String
+
+pub fn set_errored() -> Unit
+
+pub fn set_ignore_messages(Bool) -> Unit
+
+pub fn set_messages(Bool) -> Unit
 
 // Errors
 pub suberror RgError {
