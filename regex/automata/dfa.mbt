@@ -414,6 +414,14 @@ fn LazyDFA::compute_next(self : LazyDFA, sid : Int32, unit : Int32) -> Int32 {
 }
 
 ///|
+/// Whether a search can't start after (or, in reverse, before) `byte`: like
+/// upstream's quit set, a non-ASCII byte is a quit byte when Unicode word
+/// boundaries are involved, so the caller must fall back to the PikeVM.
+fn LazyDFA::start_quits(self : LazyDFA, byte : Int32) -> Bool {
+  self.quit_non_ascii && byte >= 0x80
+}
+
+///|
 /// Returns the start state for a search, given the byte preceding the
 /// search (or -1 at the beginning of the haystack).
 fn LazyDFA::start_state(
@@ -545,6 +553,9 @@ pub fn LazyDFA::find_fwd(
     at = s
   }
   let prev = if at > hs { hay[at - 1].to_int() } else { -1 }
+  if self.start_quits(prev) {
+    return DFA_FAILED
+  }
   let mut sid = self.start_state(anchored, prev)
   let mut start_pid = sid * self.stride
   let mut mat = DFA_NO_MATCH
@@ -567,14 +578,11 @@ pub fn LazyDFA::find_fwd(
               s =>
                 if s > at {
                   at = s
-                  sid = self.start_state(
-                    false,
-                    if at > hs {
-                      hay[at - 1].to_int()
-                    } else {
-                      -1
-                    },
-                  )
+                  let prev = if at > hs { hay[at - 1].to_int() } else { -1 }
+                  if self.start_quits(prev) {
+                    return DFA_FAILED
+                  }
+                  sid = self.start_state(false, prev)
                   start_pid = sid * stride
                   cur = start_pid
                 }
@@ -610,14 +618,11 @@ pub fn LazyDFA::find_fwd(
         s =>
           if s > at {
             at = s
-            sid = self.start_state(
-              false,
-              if at > hs {
-                hay[at - 1].to_int()
-              } else {
-                -1
-              },
-            )
+            let prev = if at > hs { hay[at - 1].to_int() } else { -1 }
+            if self.start_quits(prev) {
+              return DFA_FAILED
+            }
+            sid = self.start_state(false, prev)
             start_pid = sid * stride
             cur = start_pid
           }
@@ -665,6 +670,9 @@ pub fn LazyDFA::find_rev(
 ) -> Int32 {
   let len = he
   let next_byte = if end < len { hay[end].to_int() } else { -1 }
+  if self.start_quits(next_byte) {
+    return DFA_FAILED
+  }
   let mut sid = self.start_state(anchored, next_byte)
   let mut mat = DFA_NO_MATCH
   let mut at = end

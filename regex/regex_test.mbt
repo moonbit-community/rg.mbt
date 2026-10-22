@@ -100,3 +100,15 @@ test "basic api" {
     ),
   )
 }
+
+///|
+test "unicode word boundaries after non-ASCII text" {
+  // The lazy DFA can't start a search right after a non-ASCII byte when
+  // Unicode word boundaries are involved; it must fall back (like upstream's
+  // quit bytes) instead of treating the byte as a non-word byte.
+  let hay = b"\xC3\xA9a" // "éa"
+  assert_eq(@regex.Regex::new("\\Ba").find(hay), Some((2, 3)))
+  assert_eq(@regex.Regex::new("\\ba").find(hay), None)
+  assert_eq(@regex.Regex::new("a\\b").find(b"a\xC3\xA9"), None)
+  assert_eq(@regex.Regex::new("a\\B").find(b"a\xC3\xA9"), Some((0, 1)))
+}
