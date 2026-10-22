@@ -90,13 +90,11 @@ impl @termcolor.WriteColor for CounterWriter with fn is_synchronous(self) {
 }
 
 ///|
-extend CounterWriter with @termcolor.Write::{write_slice, write_bytes, flush}
+extend CounterWriter with @termcolor.Write::{write_slice, write_bytes}
 
 ///|
 extend CounterWriter with @termcolor.WriteColor::{
   supports_color,
-  supports_hyperlinks,
   set_color,
-  set_hyperlink,
   reset,
 }
