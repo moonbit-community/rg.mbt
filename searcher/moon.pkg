@@ -1,0 +1,12 @@
+import {
+  "dii/rg/matcher",
+  "moonbitlang/core/encoding/utf8",
+}
+
+warnings = "-implicit_impl_as_method"
+
+import {
+  "dii/rg/regex",
+  "dii/rg/regex/syntax",
+  "dii/rg/grep_regex",
+} for "wbtest"
