@@ -4,16 +4,18 @@
 Usage (from this directory):
   python3 gen_rg_compat.py sh > rg_compat/run.sh
   (cd rg_compat && sh run.sh)          # needs `rg` on PATH; writes rg_compat/out/
+  python3 gen_rg_compat.py normalize   # rewrites rg_compat/out/ (see below)
   python3 gen_rg_compat.py mbt         # writes ../rg_compat_test.mbt
   moon fmt
 
-The checked-in outputs in rg_compat/out/ were produced by ripgrep 15.1.0. If
-you regenerate them, update HOST below to your machine's `hostname` (it is
-normalized to `myhost` in the tests).
+The checked-in outputs in rg_compat/out/ were produced by ripgrep 15.1.0 and
+are stored normalized: the absolute path of the data directory is replaced by
+`/work` and the machine's hostname by `myhost`, so that they don't depend on
+(or reveal) where they were generated.
 """
-import re, sys, os, shlex
+import re, sys, os, shlex, socket
 
-HOST = 'myhost'
+HOST = socket.gethostname()
 DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), 'rg_compat'))
 
 COLORS = '.color_specs(@printer.ColorSpecs::default_with_color())'
@@ -319,6 +321,14 @@ if __name__ == '__main__':
         print('mkdir -p out')
         for s in SCENARIOS:
             print(rg_cmd(s))
+    elif sys.argv[1] == 'normalize':
+        out = os.path.join(DATA, 'out')
+        for name in sorted(os.listdir(out)):
+            path = os.path.join(out, name)
+            b = open(path, 'rb').read()
+            n = b.replace(DATA.encode(), b'/work').replace(HOST.encode(), b'myhost')
+            if n != b:
+                open(path, 'wb').write(n)
     else:
         parts = [emit(s) for s in SCENARIOS]
         hdr = ('///|\n/// Canonicalizes paths of files that exist in the test data directory\n'
