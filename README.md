@@ -66,20 +66,25 @@ moon test                 # native
 moon test --target wasm   # wasm
 ```
 
-ripgrep's own integration suite (`tests/*.rs` in the ripgrep repository,
-323 tests) can be run against this port. It needs a ripgrep checkout in
-`.repos/ripgrep` and a Rust toolchain that can build it:
+ripgrep's own integration suite (`tests/*.rs` in the ripgrep repository)
+can be run against this port. It needs a ripgrep checkout in `.repos/ripgrep`
+(CI uses revision `3fce3b5bb0`) and a Rust toolchain that can build it:
 
 ```sh
-scripts/run_rg_integration_tests.sh native   # 323/323 pass
-scripts/run_rg_integration_tests.sh wasm     # 305/323 pass (wasmtime)
+scripts/run_rg_integration_tests.sh native
+scripts/run_rg_integration_tests.sh wasm     # needs wasmtime
 ```
 
-The 18 tests that fail on wasm are all due to WASI rather than the port, and
-the script skips them: 10 need to spawn a process (`-z/--search-zip`,
-`--pre`), 3 rely on stdin being detected as readable when no path is given,
-and 5 search symlinks with absolute targets, which wasmtime's sandbox refuses
-to read.
+| platform | tests | native | wasm (wasmtime) |
+|---|---|---|---|
+| Linux | 332 | all pass | 306 pass, 26 skipped |
+| macOS | 323 | all pass | 305 pass, 18 skipped |
+
+The tests skipped on wasm can't pass under WASI, and they would fail for
+ripgrep built for WASI too. They need to spawn processes (`-z/--search-zip`,
+`--pre`), detect stdin as readable when no path is given, follow symlinks with
+absolute targets (refused by wasmtime's sandbox), use memory maps, or use file
+names that aren't valid UTF-8. CI runs both suites on Linux.
 
 ## Performance
 

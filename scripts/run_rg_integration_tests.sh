@@ -5,10 +5,12 @@
 # Usage: scripts/run_rg_integration_tests.sh [native|wasm] [test filter...]
 #
 # On wasm, the tests that cannot pass under WASI are skipped unless test
-# filters are given (or RG_NO_SKIP=1): 10 need to spawn processes
-# (decompression, --pre), 3 rely on stdin being detected as readable when no
-# path is given, and 5 search symlinks with absolute targets, which
-# wasmtime's sandbox refuses to read.
+# filters are given (or RG_NO_SKIP=1). On all platforms: 10 need to spawn
+# processes (decompression, --pre), 3 rely on stdin being detected as
+# readable when no path is given, and 5 search symlinks with absolute
+# targets, which wasmtime's sandbox refuses to read. Linux-only tests: 1 more
+# needs a process, 5 expect memory maps (which WASI doesn't have), and 2 use
+# file names that aren't valid UTF-8 (which WASI can't represent).
 #
 # Requires a ripgrep checkout in .repos/ripgrep and a Rust toolchain that can
 # build it (ripgrep 15.2 needs rustc >= 1.96; override with RG_TOOLCHAIN).
@@ -68,7 +70,12 @@ if [ "$target" = wasm ] && [ $# -eq 0 ] && [ -z "$RG_NO_SKIP" ]; then
     binary::after_match1_stdin multiline::stdin \
     regression::r1223_no_dir_check_for_default_path \
     misc::symlink_follow regression::r137 regression::r256 regression::r256_j1 \
-    regression::r1389_bad_symlinks_no_biscuit; do
+    regression::r1389_bad_symlinks_no_biscuit \
+    misc::compressed_uncompress \
+    binary::mmap_after_nul_match binary::mmap_binary_flag \
+    binary::mmap_match_explicit binary::mmap_match_implicit \
+    binary::mmap_match_multiple \
+    regression::r210 json::notutf8; do
     set -- "$@" --skip "$t"
   done
   set -- "$@" --exact
