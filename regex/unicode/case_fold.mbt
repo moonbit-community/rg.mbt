@@ -64,7 +64,7 @@ pub fn simple_fold(c : Int32) -> Array[Int32] {
   let t = fold_table()
   match fold_index(t, c) {
     None => []
-    Some(i) => t.values[t.starts[i]:t.starts[i + 1]].to_array()
+    Some(i) => t.values[t.starts[i]:t.starts[i + 1]].to_owned()
   }
 }
 

@@ -32,7 +32,7 @@ test "class lookups" {
   debug_inspect(age[0], content="(0, 501)")
   inspect(
     try @unicode.class(Binary("nope")) catch {
-      e => "\{to_repr(e)}"
+      e => "\{Repr(e)}"
     } noraise {
       _ => "ok"
     },

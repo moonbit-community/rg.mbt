@@ -174,7 +174,7 @@ pub(all) enum ClassQuery {
   OneLetter(Char)
   Binary(String)
   ByValue(String, String)
-} derive(Show)
+}
 
 ///|
 priv enum Canonical {
