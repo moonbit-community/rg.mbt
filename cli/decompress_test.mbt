@@ -1,6 +1,12 @@
 ///|
 test "decompress gzip (native)" {
-  if @sys.is_windows() {
+  // Skip where processes can't be spawned (e.g. wasm).
+  let can_spawn = try @sys.run_command("true", []) catch {
+    _ => false
+  } noraise {
+    _ => true
+  }
+  if !can_spawn {
     return
   }
   let path = "_build/tmpcli/a.txt.gz"

@@ -11,3 +11,5 @@ license = "MIT"
 keywords = [ "grep", "ripgrep", "search" ]
 
 description = "A port of ripgrep to MoonBit"
+
+preferred_target = "native"
