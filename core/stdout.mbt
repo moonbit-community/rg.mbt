@@ -41,13 +41,34 @@ pub impl @termcolor.Write for StdoutWriter with fn write_slice(
   }
   data.blit_to(self.buf, len~, src_offset=start, dst_offset=self.len)
   self.len += len
-  if self.line_buffered {
-    for i in start..<end {
-      if data[i] == b'\n' {
-        self.flush_buf()
-        break
-      }
-    }
+  if self.line_buffered && @memchr.memchr(b'\n', data, start, end) >= 0 {
+    self.flush_buf()
+  }
+}
+
+///|
+/// Copies small byte strings straight into the buffer (the default
+/// implementation allocates a temporary array).
+pub impl @termcolor.Write for StdoutWriter with fn write_bytes(self, bytes) {
+  let len = bytes.length()
+  if len >= self.buf.length() {
+    self.flush_buf()
+    let tmp = FixedArray::makei(len, i => bytes[i])
+    @sys.write_fd(self.fd, tmp, 0, len)
+    return
+  }
+  if self.len + len > self.buf.length() {
+    self.flush_buf()
+  }
+  let mut newline = false
+  for i in 0..<len {
+    let b = bytes[i]
+    self.buf[self.len + i] = b
+    newline = newline || b == b'\n'
+  }
+  self.len += len
+  if self.line_buffered && newline {
+    self.flush_buf()
   }
 }
 

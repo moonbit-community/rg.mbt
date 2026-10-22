@@ -1,4 +1,5 @@
 import {
+  "dii/rg/memchr",
   "dii/rg/cli",
   "dii/rg/sys",
   "dii/rg/searcher",

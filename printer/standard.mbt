@@ -1182,6 +1182,17 @@ fn StandardImpl::write_spec_bytes(
 }
 
 ///|
+/// Writes `n` in decimal with the given color.
+fn StandardImpl::write_spec_decimal(
+  self : StandardImpl,
+  spec : @termcolor.ColorSpec,
+  n : Int64,
+) -> Unit raise {
+  let start = format_decimal(n)
+  self.write_spec(spec, decimal_scratch, start, decimal_scratch.length())
+}
+
+///|
 fn StandardImpl::write_path(
   self : StandardImpl,
   path : PrinterPath,
@@ -1436,10 +1447,7 @@ fn PreludeWriter::write_line_number(
 ) -> Unit raise {
   guard line is Some(line_number) else { return }
   self.write_separator()
-  self.std.write_spec_bytes(
-    self.config().colors.line(),
-    utf8_bytes(decimal(line_number)),
-  )
+  self.std.write_spec_decimal(self.config().colors.line(), line_number)
   self.next_separator = FieldSeparator
 }
 
@@ -1453,10 +1461,7 @@ fn PreludeWriter::write_column_number(
   }
   guard column is Some(column_number) else { return }
   self.write_separator()
-  self.std.write_spec_bytes(
-    self.config().colors.column(),
-    utf8_bytes(decimal(column_number)),
-  )
+  self.std.write_spec_decimal(self.config().colors.column(), column_number)
   self.next_separator = FieldSeparator
 }
 
@@ -1469,10 +1474,7 @@ fn PreludeWriter::write_byte_offset(
     return
   }
   self.write_separator()
-  self.std.write_spec_bytes(
-    self.config().colors.column(),
-    utf8_bytes(decimal(offset)),
-  )
+  self.std.write_spec_decimal(self.config().colors.column(), offset)
   self.next_separator = FieldSeparator
 }
 

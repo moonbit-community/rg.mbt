@@ -290,6 +290,28 @@ fn decimal(n : Int64) -> String {
 }
 
 ///|
+/// Scratch space for formatting decimals without allocating.
+let decimal_scratch : FixedArray[Byte] = FixedArray::make(20, b'\x00')
+
+///|
+/// Writes the decimal digits of `n` (as an unsigned integer) to the end of
+/// `decimal_scratch`, returning the index of the first digit.
+fn format_decimal(n : Int64) -> Int32 {
+  let buf = decimal_scratch
+  let mut n = n.reinterpret_as_uint64()
+  let mut i = buf.length()
+  while true {
+    i -= 1
+    buf[i] = (b'0'.to_uint64() + n % 10).to_byte()
+    n = n / 10
+    if n == 0 {
+      break
+    }
+  }
+  i
+}
+
+///|
 fn is_ascii_space(b : Byte) -> Bool {
   b is (b'\t' | b'\n' | b'\x0B' | b'\x0C' | b'\r' | b' ')
 }
