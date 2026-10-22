@@ -314,6 +314,13 @@ pub fn hostname() -> String? {
 }
 
 ///|
+/// The errno number and description to display for a Linux-style errno
+/// (errors are displayed with Linux numbering on wasm).
+fn host_error(linux : Int32) -> (Int32, String?) {
+  (linux, None)
+}
+
+///|
 /// A no-op on wasm (there are no signals).
 pub fn ignore_sigpipe() -> Unit {
   ()

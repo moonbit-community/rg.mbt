@@ -17,9 +17,9 @@ pub(all) enum IOErrorKind {
 ///|
 /// An I/O error, modeled after Rust's `std::io::Error`.
 ///
-/// `code` is a Linux-style errno number for OS errors (on every backend:
-/// native errno values and WASI errno values are translated), or `-1` for
-/// errors that do not originate from the operating system.
+/// `code` is the errno number displayed for OS errors (the host's number on
+/// native, a Linux-style number on wasm), or `-1` for errors that do not
+/// originate from the operating system.
 pub suberror IOError {
   IOError(kind~ : IOErrorKind, code~ : Int32, message~ : String)
 } derive(Debug)
@@ -46,7 +46,8 @@ pub fn IOError::kind(self : IOError) -> IOErrorKind {
 }
 
 ///|
-/// The Linux-style errno of this error, or `-1` if it is not an OS error.
+/// The errno number of this error as displayed (see `IOError`), or `-1` if
+/// it is not an OS error.
 pub fn IOError::code(self : IOError) -> Int32 {
   let IOError(code~, ..) = self
   code
@@ -60,9 +61,16 @@ pub fn IOError::message(self : IOError) -> String {
 }
 
 ///|
-/// Builds an error from a Linux-style errno number.
+/// Builds an error from a Linux-style errno number. The kind is derived
+/// from it, while the displayed code and message are the host's (e.g.
+/// `ELOOP` is 62 on macOS), like Rust's `io::Error`.
 pub fn IOError::from_errno(code : Int32) -> IOError {
-  IOError(kind=errno_kind(code), code~, message=strerror(code))
+  let (host, message) = host_error(code)
+  IOError(
+    kind=errno_kind(code),
+    code=host,
+    message=message.unwrap_or(strerror(code)),
+  )
 }
 
 ///|

@@ -100,6 +100,28 @@ static void set_err(void) { last_err = linux_errno(errno); }
 
 MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_last_err(void) { return last_err; }
 
+static moonbit_bytes_t make_bytes(const void *data, size_t len);
+
+// The host errno corresponding to a Linux errno (the inverse of
+// `linux_errno`), for displaying errors like the host's Rust std does.
+MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_host_errno(int32_t linux) {
+  // Prefer a host errno that is explicitly translated to `linux` (e.g.
+  // macOS ELOOP 62 -> 40) over one that merely has the same number.
+  for (int e = 1; e < 256; e++) {
+    if (e != linux && linux_errno(e) == linux) return e;
+  }
+  return linux;
+}
+
+// The host's description of an errno (like Rust's `io::Error` display).
+MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_strerror(int32_t e) {
+  char buf[256];
+  if (strerror_r(e, buf, sizeof buf) != 0) {
+    buf[0] = 0;
+  }
+  return make_bytes(buf, strlen(buf));
+}
+
 static moonbit_bytes_t make_bytes(const void *data, size_t len) {
   moonbit_bytes_t b = moonbit_make_bytes((int32_t)len, 0);
   if (len > 0) memcpy(b, data, len);

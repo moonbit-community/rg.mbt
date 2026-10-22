@@ -32,6 +32,21 @@ extern "C" fn c_is_macos() -> Int32 = "moonbit_rgsys_is_macos"
 extern "C" fn c_ignore_sigpipe() = "moonbit_rgsys_ignore_sigpipe"
 
 ///|
+extern "C" fn c_host_errno(linux : Int32) -> Int32 = "moonbit_rgsys_host_errno"
+
+///|
+extern "C" fn c_strerror(e : Int32) -> Bytes = "moonbit_rgsys_strerror"
+
+///|
+/// The host errno number and description for a Linux-style errno, as
+/// displayed by Rust's std on this platform.
+fn host_error(linux : Int32) -> (Int32, String?) {
+  let e = c_host_errno(linux)
+  let msg = decode(c_strerror(e))
+  (e, if msg.is_empty() { None } else { Some(msg) })
+}
+
+///|
 /// Makes writes to a closed pipe fail with a broken pipe error instead of
 /// terminating the process (like Rust programs, which ignore SIGPIPE).
 /// Spawned processes still get the default disposition.
