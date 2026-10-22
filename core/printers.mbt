@@ -104,7 +104,7 @@ fn HiArgs::printer_standard(
   .heading(self.heading)
   .hyperlink(self.hyperlink_config)
   .max_columns_preview(self.max_columns_preview)
-  .max_columns(self.max_columns.map(x => x.reinterpret_as_int64()))
+  .max_columns(self.max_columns.map(saturate_i64))
   .only_matching(self.only_matching)
   .path(self.with_filename)
   .path_terminator(self.path_terminator)

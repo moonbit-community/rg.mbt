@@ -733,7 +733,7 @@ pub fn HiArgs::searcher(self : HiArgs) -> @searcher.Searcher {
     @matcher.LineTerminator::byte(b'\n')
   }
   let builder = @searcher.SearcherBuilder::new()
-    .max_matches(self.max_count.map(x => x.reinterpret_as_int64()))
+    .max_matches(self.max_count.map(saturate_i64))
     .line_terminator(line_term)
     .invert_match(self.invert_match)
     .line_number(self.line_number)
@@ -752,4 +752,15 @@ pub fn HiArgs::searcher(self : HiArgs) -> @searcher.Searcher {
     Disabled => ignore(builder.bom_sniffing(false))
   }
   builder.build()
+}
+
+///|
+/// Converts a `u64` limit to `Int64`, saturating: no count or length can
+/// exceed `Int64::MAX`, so this preserves ripgrep's unsigned comparisons.
+fn saturate_i64(x : UInt64) -> Int64 {
+  if x > 0x7FFFFFFFFFFFFFFFUL {
+    0x7FFFFFFFFFFFFFFFL
+  } else {
+    x.reinterpret_as_int64()
+  }
 }
