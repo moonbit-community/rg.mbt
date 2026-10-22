@@ -23,12 +23,14 @@ pub(all) enum OverrideGlob {
 
 ///|
 /// Manages a set of overrides provided explicitly by the end user.
-pub struct Override(Gitignore) derive(Debug)
+pub struct Override {
+  priv gi : Gitignore
+} derive(Debug)
 
 ///|
 /// Returns an empty matcher that never matches any file path.
 pub fn Override::empty() -> Override {
-  Override(Gitignore::empty())
+  { gi: Gitignore::empty(), }
 }
 
 ///|
@@ -36,7 +38,7 @@ pub fn Override::empty() -> Override {
 ///
 /// All matches are done relative to this path.
 pub fn Override::path(self : Override) -> String {
-  self.0.path()
+  self.gi.path()
 }
 
 ///|
@@ -44,19 +46,19 @@ pub fn Override::path(self : Override) -> String {
 ///
 /// When a matcher is empty, it will never match any file path.
 pub fn Override::is_empty(self : Override) -> Bool {
-  self.0.is_empty()
+  self.gi.is_empty()
 }
 
 ///|
 /// Returns the total number of ignore globs.
 pub fn Override::num_ignores(self : Override) -> Int32 {
-  self.0.num_whitelists()
+  self.gi.num_whitelists()
 }
 
 ///|
 /// Returns the total number of whitelisted globs.
 pub fn Override::num_whitelists(self : Override) -> Int32 {
-  self.0.num_ignores()
+  self.gi.num_ignores()
 }
 
 ///|
@@ -86,7 +88,7 @@ pub fn Override::matched(
   if self.is_empty() {
     return None
   }
-  let mat = self.0.matched(path, is_dir).invert()
+  let mat = self.gi.matched(path, is_dir).invert()
   if mat.is_none() && self.num_whitelists() > 0 && !is_dir {
     return Ignore(UnmatchedIgnore)
   }
@@ -116,7 +118,7 @@ pub fn OverrideBuilder::new(path : String) -> OverrideBuilder {
 pub fn OverrideBuilder::build(
   self : OverrideBuilder,
 ) -> Override raise IgnoreError {
-  Override(self.builder.build())
+  { gi: self.builder.build(), }
 }
 
 ///|

@@ -476,20 +476,27 @@ fn Ignore::matched_ignore(
   let mut m_gi : Match[IgnoreMatch] = None
   let mut m_gi_exclude : Match[IgnoreMatch] = None
   let mut m_explicit : Match[IgnoreMatch] = None
-  let parents = self.parents()
+  // N.B. The chain of matchers is walked directly (instead of collecting
+  // `parents()`) since this is called for every directory entry.
   let any_git = !self.inner.opts.require_git ||
-    parents.iter().any(ig => ig.has_git)
+    ({
+      let mut cur = Some(self.inner)
+      let mut found = false
+      while cur is Some(ig) {
+        if ig.has_git {
+          found = true
+          break
+        }
+        cur = ig.parent
+      }
+      found
+    })
   let mut saw_git = false
-  // Index of the first absolute parent.
-  let mut first_abs = parents.length()
-  for i, ig in parents {
-    if ig.is_absolute_parent {
-      first_abs = i
-      break
-    }
-  }
-  for i in 0..<first_abs {
-    let ig = parents[i]
+  // Matchers for the directories being walked (up to the first absolute
+  // parent).
+  let mut cur = Some(self.inner)
+  let mut last_child : IgnoreInner? = None
+  while cur is Some(ig) && !ig.is_absolute_parent {
     if m_custom_ignore.is_none() {
       m_custom_ignore = gi_match(ig.custom_ignore_matcher, path, is_dir)
     }
@@ -503,6 +510,8 @@ fn Ignore::matched_ignore(
       m_gi_exclude = gi_match(ig.git_exclude_matcher, path, is_dir)
     }
     saw_git = saw_git || ig.has_git
+    last_child = Some(ig)
+    cur = ig.parent
   }
   if self.inner.opts.parents {
     if self.absolute_base is Some(abs_parent_path) {
@@ -511,25 +520,25 @@ fn Ignore::matched_ignore(
       // The main issue we want to avoid is accidentally duplicating
       // directory components, so we try to strip any common prefix
       // off of `path`.
-      let rel = if first_abs == 0 {
-        path
-      } else {
-        let ig = parents[first_abs - 1]
-        // This is a weird special case when ripgrep users search with
-        // just a `.`, as some tools do automatically (like consult). In
-        // this case, if we don't bail out now, the code below will strip
-        // a leading `.` from `path`, which might mangle a hidden file name!
-        if path_eq(ig.dir, ".") {
-          path
-        } else {
-          let without_dot_slash = strip_if_is_prefix("./", ig.dir)
-          let relative_base = strip_if_is_prefix(without_dot_slash, path)
-          strip_if_is_prefix("/", relative_base)
-        }
+      let rel = match last_child {
+        None => path
+        Some(ig) =>
+          // This is a weird special case when ripgrep users search with
+          // just a `.`, as some tools do automatically (like consult). In
+          // this case, if we don't bail out now, the code below will strip
+          // a leading `.` from `path`, which might mangle a hidden file
+          // name!
+          if path_eq(ig.dir, ".") {
+            path
+          } else {
+            let without_dot_slash = strip_if_is_prefix("./", ig.dir)
+            let relative_base = strip_if_is_prefix(without_dot_slash, path)
+            strip_if_is_prefix("/", relative_base)
+          }
       }
       let path = path_join(abs_parent_path, rel)
-      for i in first_abs..<parents.length() {
-        let ig = parents[i]
+      // Matchers for the absolute parents.
+      while cur is Some(ig) {
         if m_custom_ignore.is_none() {
           m_custom_ignore = gi_match(ig.custom_ignore_matcher, path, is_dir)
         }
@@ -543,6 +552,7 @@ fn Ignore::matched_ignore(
           m_gi_exclude = gi_match(ig.git_exclude_matcher, path, is_dir)
         }
         saw_git = saw_git || ig.has_git
+        cur = ig.parent
       }
     }
   }
