@@ -91,6 +91,7 @@ pub fn HyperlinkFormat::into_config(Self, HyperlinkEnvironment) -> HyperlinkConf
 pub fn HyperlinkFormat::is_empty(Self) -> Bool
 pub fn HyperlinkFormat::is_line_dependent(Self) -> Bool
 pub fn HyperlinkFormat::parse(String) -> Self raise HyperlinkFormatError
+pub fn HyperlinkFormat::to_string(Self) -> String
 pub impl Show for HyperlinkFormat
 
 pub(all) enum HyperlinkFormatErrorKind {
