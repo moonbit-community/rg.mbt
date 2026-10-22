@@ -2,6 +2,7 @@
 package "dii/rg/regex/automata"
 
 import {
+  "dii/rg/memchr",
   "dii/rg/regex/syntax",
   "moonbitlang/core/debug",
 }
@@ -74,11 +75,12 @@ pub fn PikeVM::nfa(Self) -> NFA
 pub fn PikeVM::search_slots(Self, FixedArray[Byte], Int32, Int32, Int32, Int32, Bool, Bool, FixedArray[Int32], pre? : Prefilter) -> Bool
 
 pub(all) enum Prefilter {
-  Byte(Int32)
+  Byte(Byte)
+  Bytes2(Byte, Byte)
+  Bytes3(Byte, Byte, Byte)
   ByteSet(FixedArray[Bool])
-  Memmem(FixedArray[Byte], Int32)
-  Horspool(FixedArray[Byte], FixedArray[Int32])
-  Multi(FixedArray[Bool], Array[Array[FixedArray[Byte]]], Int32)
+  Substr(@memchr.Finder)
+  Multi(FixedArray[Byte], FixedArray[Bool], Array[Array[FixedArray[Byte]]], Int32)
 }
 pub fn Prefilter::find(Self, FixedArray[Byte], Int32, Int32) -> (Int32, Int32)?
 pub fn Prefilter::is_fast(Self) -> Bool

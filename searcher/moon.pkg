@@ -1,5 +1,6 @@
 import {
   "dii/rg/matcher",
+  "dii/rg/memchr",
   "moonbitlang/core/encoding/utf8",
 }
 

@@ -6,12 +6,12 @@ pub fn find_byte(
   start : Int32,
   end : Int32,
 ) -> Int32? {
-  for i in start..<end {
-    if buf[i] == b {
-      return Some(i)
-    }
+  let i = @memchr.memchr(b, buf, start, end)
+  if i < 0 {
+    None
+  } else {
+    Some(i)
   }
-  None
 }
 
 ///|
@@ -22,12 +22,12 @@ pub fn rfind_byte(
   start : Int32,
   end : Int32,
 ) -> Int32? {
-  for i = end - 1; i >= start; i = i - 1 {
-    if buf[i] == b {
-      return Some(i)
-    }
+  let i = @memchr.memrchr(b, buf, start, end)
+  if i < 0 {
+    None
+  } else {
+    Some(i)
   }
-  None
 }
 
 ///|
@@ -88,13 +88,7 @@ pub fn count_lines(
   end : Int32,
   line_term : Byte,
 ) -> Int64 {
-  let mut n = 0L
-  for i in start..<end {
-    if buf[i] == line_term {
-      n += 1L
-    }
-  }
-  n
+  @memchr.count(line_term, buf, start, end).to_int64()
 }
 
 ///|

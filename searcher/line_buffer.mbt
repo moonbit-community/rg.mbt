@@ -77,9 +77,7 @@ pub fn SliceReader::from_bytes(bytes : Bytes) -> SliceReader {
 ///|
 pub impl Reader for SliceReader with fn read(self, buf, start, len) {
   let n = if self.end - self.pos < len { self.end - self.pos } else { len }
-  for i in 0..<n {
-    buf[start + i] = self.buf[self.pos + i]
-  }
+  self.buf.blit_to(buf, len=n, src_offset=self.pos, dst_offset=start)
   self.pos += n
   n
 }
@@ -237,13 +235,13 @@ fn replace_bytes(
     return None
   }
   let mut first : Int32? = None
-  for i in start..<end {
-    if buf[i] == src {
-      buf[i] = replacement
-      if first is None {
-        first = Some(i - start)
-      }
+  let mut i = @memchr.memchr(src, buf, start, end)
+  while i >= 0 {
+    buf[i] = replacement
+    if first is None {
+      first = Some(i - start)
     }
+    i = @memchr.memchr(src, buf, i + 1, end)
   }
   first
 }

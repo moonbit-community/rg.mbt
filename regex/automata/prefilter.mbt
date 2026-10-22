@@ -3,16 +3,24 @@
 /// every match must start with.
 pub(all) enum Prefilter {
   /// A single byte.
-  Byte(Int32)
-  /// A set of bytes (each literal is a single byte).
+  Byte(Byte)
+  /// One of two bytes (each literal is a single byte).
+  Bytes2(Byte, Byte)
+  /// One of three bytes.
+  Bytes3(Byte, Byte, Byte)
+  /// A larger set of bytes.
   ByteSet(FixedArray[Bool])
-  /// A single literal of length >= 2, with the offset of its rarest byte.
-  Memmem(FixedArray[Byte], Int32)
-  /// A single literal of length >= 4, searched with Boyer-Moore-Horspool
-  /// (the payload is the needle and its shift table).
-  Horspool(FixedArray[Byte], FixedArray[Int32])
-  /// Several literals, bucketed by their first byte in priority order.
-  Multi(FixedArray[Bool], Array[Array[FixedArray[Byte]]], Int32)
+  /// A single literal of length >= 2.
+  Substr(@memchr.Finder)
+  /// Several literals, bucketed by their first byte in priority order. The
+  /// first array holds the distinct first bytes when there are at most three
+  /// of them (so they can be found with `memchr2`/`memchr3`).
+  Multi(
+    FixedArray[Byte],
+    FixedArray[Bool],
+    Array[Array[FixedArray[Byte]]],
+    Int32
+  )
 }
 
 ///|
@@ -25,62 +33,66 @@ pub fn Prefilter::new(lits : Array[Bytes]) -> Prefilter? {
   if lits.length() == 1 {
     let lit = lits[0]
     if lit.length() == 1 {
-      return Some(Byte(lit[0].to_int()))
+      return Some(Byte(lit[0]))
     }
-    if lit.length() >= 4 {
-      let needle = lit.to_fixedarray()
-      let n = needle.length()
-      let shift = FixedArray::make(256, n)
-      for i in 0..<(n - 1) {
-        shift[needle[i].to_int()] = n - 1 - i
-      }
-      return Some(Horspool(needle, shift))
-    }
-    let mut rare = 0
+    // Filter candidates with the two rarest bytes of the literal.
+    let rank = (i : Int32) => @syntax.rank(lit[i].to_int())
+    let mut r1 = 0
     for i in 1..<lit.length() {
-      if @syntax.rank(lit[i].to_int()) < @syntax.rank(lit[rare].to_int()) {
-        rare = i
+      if rank(i) < rank(r1) {
+        r1 = i
       }
     }
-    return Some(Memmem(lit.to_fixedarray(), rare))
-  }
-  if lits.iter().all(l => l.length() == 1) {
-    let set = FixedArray::make(256, false)
-    for l in lits {
-      set[l[0].to_int()] = true
+    let mut r2 = if r1 == 0 { 1 } else { 0 }
+    for i in 0..<lit.length() {
+      if i != r1 && rank(i) < rank(r2) {
+        r2 = i
+      }
     }
-    return Some(ByteSet(set))
+    return Some(Substr(@memchr.Finder::new(lit.to_fixedarray(), r1, r2)))
   }
   let set = FixedArray::make(256, false)
+  let firsts : Array[Byte] = []
+  for l in lits {
+    if !set[l[0].to_int()] {
+      set[l[0].to_int()] = true
+      firsts.push(l[0])
+    }
+  }
+  if lits.iter().all(l => l.length() == 1) {
+    return Some(
+      match firsts {
+        [a] => Byte(a)
+        [a, b] => Bytes2(a, b)
+        [a, b, c] => Bytes3(a, b, c)
+        _ => ByteSet(set)
+      },
+    )
+  }
   let buckets : Array[Array[FixedArray[Byte]]] = Array::makei(256, _ => [])
   let mut min_len = lits[0].length()
   for l in lits {
-    let b = l[0].to_int()
-    set[b] = true
-    buckets[b].push(l.to_fixedarray())
+    buckets[l[0].to_int()].push(l.to_fixedarray())
     if l.length() < min_len {
       min_len = l.length()
     }
   }
-  Some(Multi(set, buckets, min_len))
+  let small = if firsts.length() <= 3 {
+    FixedArray::from_array(firsts)
+  } else {
+    []
+  }
+  Some(Multi(small, set, buckets, min_len))
 }
 
 ///|
 /// Returns true if the prefilter is believed to be fast.
 pub fn Prefilter::is_fast(self : Prefilter) -> Bool {
   match self {
-    Byte(b) => @syntax.rank(b) < 250
-    ByteSet(set) => {
-      let mut n = 0
-      for b in set {
-        if b {
-          n += 1
-        }
-      }
-      n <= 3
-    }
-    Memmem(_, _) | Horspool(_, _) => true
-    Multi(set, _, _) => {
+    Byte(b) => @syntax.rank(b.to_int()) < 250
+    Bytes2(_, _) | Bytes3(_, _, _) | Substr(_) => true
+    ByteSet(_) => false
+    Multi(_, set, _, _) => {
       let mut n = 0
       for i in 0..<256 {
         if set[i] {
@@ -100,12 +112,12 @@ pub fn memchr(
   start : Int32,
   end : Int32,
 ) -> Int32? {
-  for i in start..<end {
-    if hay[i] == b {
-      return Some(i)
-    }
+  let i = @memchr.memchr(b, hay, start, end)
+  if i < 0 {
+    None
+  } else {
+    Some(i)
   }
-  None
 }
 
 ///|
@@ -137,16 +149,11 @@ pub fn Prefilter::find(
   start : Int32,
   end : Int32,
 ) -> (Int32, Int32)? {
+  let one = (i : Int32) => if i < 0 { None } else { Some((i, i + 1)) }
   match self {
-    Byte(b) => {
-      let b = b.to_byte()
-      for i in start..<end {
-        if hay[i] == b {
-          return Some((i, i + 1))
-        }
-      }
-      None
-    }
+    Byte(b) => one(@memchr.memchr(b, hay, start, end))
+    Bytes2(a, b) => one(@memchr.memchr2(a, b, hay, start, end))
+    Bytes3(a, b, c) => one(@memchr.memchr3(a, b, c, hay, start, end))
     ByteSet(set) => {
       for i in start..<end {
         if set[hay[i].to_int()] {
@@ -155,53 +162,44 @@ pub fn Prefilter::find(
       }
       None
     }
-    Memmem(needle, rare) => {
-      let n = needle.length()
-      let rb = needle[rare]
-      let mut i = start + rare
-      let last = end - n + rare
-      while i <= last {
-        if hay[i] == rb {
-          let s = i - rare
-          if matches_at(needle, hay, s, end) {
-            return Some((s, s + n))
-          }
-        }
-        i += 1
+    Substr(finder) => {
+      let i = finder.find(hay, start, end)
+      if i < 0 {
+        None
+      } else {
+        Some((i, i + finder.needle().length()))
       }
-      None
     }
-    Horspool(needle, shift) => {
-      let n = needle.length()
-      let last_byte = needle[n - 1]
-      let mut i = start
-      let limit = end - n
-      while i <= limit {
-        let b = hay[i + n - 1]
-        if b == last_byte {
-          let mut j = 0
-          while j < n - 1 && hay[i + j] == needle[j] {
-            j += 1
-          }
-          if j == n - 1 {
-            return Some((i, i + n))
-          }
-        }
-        i += shift[b.to_int()]
-      }
-      None
-    }
-    Multi(set, buckets, min_len) => {
+    Multi(small, set, buckets, min_len) => {
       let last = end - min_len
-      for i in start..<=last {
-        let b = hay[i].to_int()
-        if set[b] {
-          for lit in buckets[b] {
-            if matches_at(lit, hay, i, end) {
-              return Some((i, i + lit.length()))
+      let mut i = start
+      while i <= last {
+        // Jump to the next position starting with a possible first byte.
+        i = match small.length() {
+          1 => @memchr.memchr(small[0], hay, i, last + 1)
+          2 => @memchr.memchr2(small[0], small[1], hay, i, last + 1)
+          3 => @memchr.memchr3(small[0], small[1], small[2], hay, i, last + 1)
+          _ => {
+            let mut j = i
+            while j <= last && !set[hay[j].to_int()] {
+              j += 1
+            }
+            if j > last {
+              -1
+            } else {
+              j
             }
           }
         }
+        if i < 0 {
+          return None
+        }
+        for lit in buckets[hay[i].to_int()] {
+          if matches_at(lit, hay, i, end) {
+            return Some((i, i + lit.length()))
+          }
+        }
+        i += 1
       }
       None
     }

@@ -1,6 +1,7 @@
 import {
   "dii/rg/regex/syntax",
   "dii/rg/regex/unicode",
+  "dii/rg/memchr",
 }
 
 warnings = "-implicit_impl_as_method"
