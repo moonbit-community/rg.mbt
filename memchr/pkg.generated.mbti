@@ -1,0 +1,29 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/rg/memchr"
+
+// Values
+pub fn count(Byte, FixedArray[Byte], Int32, Int32) -> Int32
+
+pub fn memchr(Byte, FixedArray[Byte], Int32, Int32) -> Int32
+
+pub fn memchr2(Byte, Byte, FixedArray[Byte], Int32, Int32) -> Int32
+
+pub fn memchr3(Byte, Byte, Byte, FixedArray[Byte], Int32, Int32) -> Int32
+
+pub fn memrchr(Byte, FixedArray[Byte], Int32, Int32) -> Int32
+
+// Errors
+
+// Types and methods
+pub struct Finder {
+  needle : FixedArray[Byte]
+  i1 : Int32
+  i2 : Int32
+}
+pub fn Finder::find(Self, FixedArray[Byte], Int32, Int32) -> Int32
+pub fn Finder::needle(Self) -> FixedArray[Byte]
+pub fn Finder::new(FixedArray[Byte], Int32, Int32) -> Self
+
+// Type aliases
+
+// Traits

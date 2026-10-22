@@ -1,0 +1,5 @@
+import {
+  "moonbitlang/core/v128",
+}
+
+warnings = "-implicit_impl_as_method"
