@@ -33,6 +33,10 @@ case "$target" in
     export CARGO_BIN_EXE_rg="$root/_build/native/release/build/cmd/rg/rg.exe"
     ;;
   wasm)
+    command -v wasmtime >/dev/null || {
+      echo "wasmtime is required to run the wasm integration tests" >&2
+      exit 1
+    }
     moon build --release --target wasm cmd/rg >/dev/null
     export CARGO_BIN_EXE_rg="$root/_build/wasm/release/build/cmd/rg/rg.wasm"
     # The test harness runs the binary through `qemu-<arch>` whenever

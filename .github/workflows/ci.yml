@@ -70,9 +70,13 @@ jobs:
         run: rustup toolchain install 1.97.1 --profile minimal
 
       - name: Install wasmtime
+        env:
+          WASMTIME_VERSION: v44.0.1
         run: |
-          curl -fsSL https://wasmtime.dev/install.sh | bash
-          echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
+          name="wasmtime-$WASMTIME_VERSION-x86_64-linux"
+          curl -fsSL "https://github.com/bytecodealliance/wasmtime/releases/download/$WASMTIME_VERSION/$name.tar.xz" | tar -xJ -C "$HOME"
+          echo "$HOME/$name" >> "$GITHUB_PATH"
+          "$HOME/$name/wasmtime" --version
 
       - name: Fetch ripgrep
         run: |
