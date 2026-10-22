@@ -103,3 +103,25 @@ test "finder agrees with naive search" {
   let f = @memchr.Finder::new([b'x', b'y', b'z'], 0, 2)
   assert_eq(f.find(hay, 0, 500), -1)
 }
+
+///|
+test "pair set agrees with scalar check" {
+  let hay = gen(300, 3)
+  let s1 : Array[Byte] = [b'a', b'c']
+  let s2 : Array[Byte] = [b'b']
+  for (o1, o2) in [(0, 1), (2, 0), (1, 1), (3, 5)] {
+    let ps = @memchr.PairSet::new(o1, s1, o2, s2)
+    let maxo = if o1 > o2 { o1 } else { o2 }
+    for start in [0, 7, 290] {
+      let limit = 300 - maxo
+      let mut want = -1
+      for i in start..<limit {
+        if s1.contains(hay[i + o1]) && s2.contains(hay[i + o2]) {
+          want = i
+          break
+        }
+      }
+      assert_eq(ps.find(hay, start, limit), want)
+    }
+  }
+}

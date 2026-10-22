@@ -80,7 +80,7 @@ pub(all) enum Prefilter {
   Bytes3(Byte, Byte, Byte)
   ByteSet(FixedArray[Bool])
   Substr(@memchr.Finder)
-  Multi(FixedArray[Byte], FixedArray[Bool], Array[Array[FixedArray[Byte]]], Int32)
+  Multi(@memchr.PairSet?, FixedArray[Byte], FixedArray[Bool], Array[Array[FixedArray[Byte]]], Int32)
 }
 pub fn Prefilter::find(Self, FixedArray[Byte], Int32, Int32) -> (Int32, Int32)?
 pub fn Prefilter::is_fast(Self) -> Bool

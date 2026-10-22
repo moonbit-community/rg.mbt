@@ -12,10 +12,12 @@ pub(all) enum Prefilter {
   ByteSet(FixedArray[Bool])
   /// A single literal of length >= 2.
   Substr(@memchr.Finder)
-  /// Several literals, bucketed by their first byte in priority order. The
-  /// first array holds the distinct first bytes when there are at most three
-  /// of them (so they can be found with `memchr2`/`memchr3`).
+  /// Several literals, bucketed by their first byte in priority order.
+  /// Candidates are found with a SIMD pair-set filter when possible, else
+  /// with the distinct first bytes (when there are at most three of them, so
+  /// they can be found with `memchr2`/`memchr3`) or the first-byte set.
   Multi(
+    @memchr.PairSet?,
     FixedArray[Byte],
     FixedArray[Bool],
     Array[Array[FixedArray[Byte]]],
@@ -82,7 +84,40 @@ pub fn Prefilter::new(lits : Array[Bytes]) -> Prefilter? {
   } else {
     []
   }
-  Some(Multi(small, set, buckets, min_len))
+  Some(Multi(pair_set(lits, min_len), small, set, buckets, min_len))
+}
+
+///|
+/// Picks the two offsets (below `min_len`) whose sets of bytes across all
+/// literals are small (at most 4 bytes) and rarest, and builds a pair-set
+/// filter from them.
+fn pair_set(lits : Array[Bytes], min_len : Int32) -> @memchr.PairSet? {
+  let cands : Array[(Int32, Array[Byte], Int32)] = []
+  for o in 0..<min_len {
+    let bytes : Array[Byte] = []
+    for l in lits {
+      if !bytes.contains(l[o]) {
+        bytes.push(l[o])
+      }
+      if bytes.length() > 4 {
+        break
+      }
+    }
+    if bytes.length() <= 4 {
+      let mut score = 0
+      for b in bytes {
+        score += @syntax.rank(b.to_int())
+      }
+      cands.push((o, bytes, score))
+    }
+  }
+  if cands.is_empty() {
+    return None
+  }
+  cands.sort_by((a, b) => a.2.compare(b.2))
+  let (o1, s1, _) = cands[0]
+  let (o2, s2, _) = if cands.length() > 1 { cands[1] } else { cands[0] }
+  Some(@memchr.PairSet::new(o1, s1, o2, s2))
 }
 
 ///|
@@ -92,7 +127,7 @@ pub fn Prefilter::is_fast(self : Prefilter) -> Bool {
     Byte(b) => @syntax.rank(b.to_int()) < 250
     Bytes2(_, _) | Bytes3(_, _, _) | Substr(_) => true
     ByteSet(_) => false
-    Multi(_, set, _, _) => {
+    Multi(_, _, set, _, _) => {
       let mut n = 0
       for i in 0..<256 {
         if set[i] {
@@ -170,24 +205,28 @@ pub fn Prefilter::find(
         Some((i, i + finder.needle().length()))
       }
     }
-    Multi(small, set, buckets, min_len) => {
+    Multi(pairs, small, set, buckets, min_len) => {
       let last = end - min_len
       let mut i = start
       while i <= last {
-        // Jump to the next position starting with a possible first byte.
-        i = match small.length() {
-          1 => @memchr.memchr(small[0], hay, i, last + 1)
-          2 => @memchr.memchr2(small[0], small[1], hay, i, last + 1)
-          3 => @memchr.memchr3(small[0], small[1], small[2], hay, i, last + 1)
-          _ => {
-            let mut j = i
-            while j <= last && !set[hay[j].to_int()] {
-              j += 1
-            }
-            if j > last {
-              -1
-            } else {
-              j
+        // Jump to the next candidate position.
+        i = if pairs is Some(ps) {
+          ps.find(hay, i, last + 1)
+        } else {
+          match small.length() {
+            1 => @memchr.memchr(small[0], hay, i, last + 1)
+            2 => @memchr.memchr2(small[0], small[1], hay, i, last + 1)
+            3 => @memchr.memchr3(small[0], small[1], small[2], hay, i, last + 1)
+            _ => {
+              let mut j = i
+              while j <= last && !set[hay[j].to_int()] {
+                j += 1
+              }
+              if j > last {
+                -1
+              } else {
+                j
+              }
             }
           }
         }
