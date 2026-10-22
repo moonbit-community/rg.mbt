@@ -1240,6 +1240,11 @@ fn StandardImpl::start_hyperlink(
   line_number : Int64?,
   column : Int64?,
 ) -> Bool raise {
+  // Without a hyperlink format nothing is written (`Interpolator::begin`
+  // would return false), so skip computing the hyperlink path and values.
+  if self.config().hyperlink.format.is_empty() {
+    return false
+  }
   guard path.as_hyperlink(self.config().hyperlink.env) is Some(hyperpath) else {
     return false
   }
@@ -1440,6 +1445,9 @@ fn PreludeWriter::start(
   column : Int64?,
 ) -> Unit raise {
   guard self.std.path() is Some(path) else { return }
+  if self.config().hyperlink.format.is_empty() {
+    return
+  }
   if self.config().hyperlink.format.is_line_dependent() ||
     !self.config().heading {
     self.interp_status = self.std.start_hyperlink(path, line_number, column)

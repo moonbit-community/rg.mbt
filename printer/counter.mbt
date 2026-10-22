@@ -3,13 +3,17 @@
 /// written.
 priv struct CounterWriter {
   wtr : &@termcolor.WriteColor
+  // Whether `wtr` supports color. When it doesn't, setting and resetting
+  // colors are no-ops, so they're skipped (they happen several times per
+  // printed line).
+  color : Bool
   mut count : Int64
   mut total_count : Int64
 }
 
 ///|
 fn CounterWriter::new(wtr : &@termcolor.WriteColor) -> CounterWriter {
-  { wtr, count: 0, total_count: 0, }
+  { wtr, color: wtr.supports_color(), count: 0, total_count: 0, }
 }
 
 ///|
@@ -61,7 +65,7 @@ impl @termcolor.Write for CounterWriter with fn flush(self) {
 
 ///|
 impl @termcolor.WriteColor for CounterWriter with fn supports_color(self) {
-  self.wtr.supports_color()
+  self.color
 }
 
 ///|
@@ -71,7 +75,9 @@ impl @termcolor.WriteColor for CounterWriter with fn supports_hyperlinks(self) {
 
 ///|
 impl @termcolor.WriteColor for CounterWriter with fn set_color(self, spec) {
-  self.wtr.set_color(spec)
+  if self.color {
+    self.wtr.set_color(spec)
+  }
 }
 
 ///|
@@ -81,7 +87,9 @@ impl @termcolor.WriteColor for CounterWriter with fn set_hyperlink(self, link) {
 
 ///|
 impl @termcolor.WriteColor for CounterWriter with fn reset(self) {
-  self.wtr.reset()
+  if self.color {
+    self.wtr.reset()
+  }
 }
 
 ///|

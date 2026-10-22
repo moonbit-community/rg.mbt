@@ -61,6 +61,15 @@ pub impl @termcolor.Write for StdoutWriter with fn write_slice(
 /// implementation allocates a temporary array).
 pub impl @termcolor.Write for StdoutWriter with fn write_bytes(self, bytes) {
   let len = bytes.length()
+  // Fast path for single bytes (field separators, terminators).
+  if len == 1 && self.len < self.buf.length() {
+    self.buf[self.len] = bytes[0]
+    self.len += 1
+    if self.line_buffered && bytes[0] == b'\n' {
+      self.flush_buf()
+    }
+    return
+  }
   if len >= self.buf.length() {
     self.flush_buf()
     let tmp = FixedArray::makei(len, i => bytes[i])
