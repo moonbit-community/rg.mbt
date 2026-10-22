@@ -774,6 +774,13 @@ fn readlink_at(
 }
 
 ///|
+/// Unsupported on wasm (like Rust's `std::fs::canonicalize` on WASI).
+pub fn canonicalize(path : String) -> String raise IOError {
+  ignore(path)
+  raise unsupported()
+}
+
+///|
 /// The target of the symlink at `path`.
 pub fn read_link(path : String) -> String raise IOError {
   let (dirfd, rel) = resolve(path)

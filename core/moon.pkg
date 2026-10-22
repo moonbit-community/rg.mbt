@@ -19,4 +19,3 @@ supported_targets = "native+wasm"
 import {
   "moonbit-community/rg/osstr",
 } for "test"
-

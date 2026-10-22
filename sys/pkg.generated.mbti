@@ -8,6 +8,8 @@ import {
 // Values
 pub fn args() -> Array[String]
 
+pub fn canonicalize(String) -> String raise IOError
+
 pub fn create_dir_all(String) -> Unit raise IOError
 
 pub fn current_dir() -> String?

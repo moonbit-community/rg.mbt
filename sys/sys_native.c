@@ -399,6 +399,18 @@ MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_readdir(moonbit_bytes_t path) {
   return r;
 }
 
+MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_realpath(moonbit_bytes_t path) {
+  last_err = 0;
+  char *p = realpath((const char *)path, NULL);
+  if (!p) {
+    set_err();
+    return empty_bytes();
+  }
+  moonbit_bytes_t r = make_bytes(p, strlen(p));
+  free(p);
+  return r;
+}
+
 MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_readlink(moonbit_bytes_t path) {
   last_err = 0;
   size_t cap = 256;

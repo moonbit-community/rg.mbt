@@ -107,6 +107,10 @@ extern "C" fn c_readdir(path : Bytes) -> Bytes = "moonbit_rgsys_readdir"
 extern "C" fn c_readlink(path : Bytes) -> Bytes = "moonbit_rgsys_readlink"
 
 ///|
+#borrow(path)
+extern "C" fn c_realpath(path : Bytes) -> Bytes = "moonbit_rgsys_realpath"
+
+///|
 #borrow(prog, argblob, stdin_path)
 extern "C" fn c_run(
   prog : Bytes,
@@ -385,6 +389,16 @@ pub fn read_dir(path : String) -> Array[DirEntry] raise IOError {
       { name: decode(e[1:]), file_type: kind_to_file_type(e[0].to_int()), }
     }
   ]
+}
+
+///|
+/// The canonical, absolute form of `path` (resolving symlinks).
+pub fn canonicalize(path : String) -> String raise IOError {
+  let b = c_realpath(cstr(path))
+  if c_last_err() != 0 {
+    raise last_error()
+  }
+  decode(b)
 }
 
 ///|

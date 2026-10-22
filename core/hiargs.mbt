@@ -332,7 +332,10 @@ fn color_specs_from_low(low : LowArgs) -> @printer.ColorSpecs raise RgError {
 fn hyperlink_config_from_low(
   low : LowArgs,
 ) -> @printer.HyperlinkConfig raise RgError {
-  let mut env = @printer.HyperlinkEnvironment::new()
+  // Like ripgrep, hyperlinks use canonical (absolute) paths.
+  let mut env = @printer.HyperlinkEnvironment::new().canonicalize(
+    Some(path => Some(@sys.canonicalize(path)) catch { _ => None }),
+  )
   if hostname(low.hostname_bin) is Some(host) {
     log_debug(
       "rg::flags::hiargs",
