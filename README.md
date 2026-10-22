@@ -78,7 +78,7 @@ scripts/run_rg_integration_tests.sh wasm     # needs wasmtime
 | platform | tests | native | wasm (wasmtime) |
 |---|---|---|---|
 | Linux | 332 | all pass | 306 pass, 26 skipped |
-| macOS | 323 | all pass | 305 pass, 18 skipped |
+| macOS | 323 | all pass | 302 pass, 21 skipped |
 
 The tests skipped on wasm can't pass under WASI, and they would fail for
 ripgrep built for WASI too. They need to spawn processes (`-z/--search-zip`,

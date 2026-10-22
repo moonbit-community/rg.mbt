@@ -30,23 +30,28 @@ jobs:
           moon version --all
           moon update
 
+      # All warnings are errors.
+      - name: Check (no warnings)
+        run: |
+          moon check --deny-warn --target native
+          moon check --deny-warn --target wasm
+
       - name: Check formatting and interfaces
         run: |
-          moon check
           moon fmt --check
           moon info
           git diff --exit-code
 
       - name: Test (native)
-        run: moon test --target native
+        run: moon test --deny-warn --target native
 
       - name: Test (wasm)
-        run: moon test --target wasm
+        run: moon test --deny-warn --target wasm
 
       - name: Build rg
         run: |
-          moon build --release --target native cmd/rg
-          moon build --release --target wasm cmd/rg
+          moon build --deny-warn --release --target native cmd/rg
+          moon build --deny-warn --release --target wasm cmd/rg
 
   # Runs ripgrep's own integration test suite against this port.
   integration:

@@ -25,9 +25,10 @@ jobs:
 
       - name: Prepublish check
         run: |
-          moon check
-          moon test --target native
-          moon test --target wasm
+          moon check --deny-warn --target native
+          moon check --deny-warn --target wasm
+          moon test --deny-warn --target native
+          moon test --deny-warn --target wasm
 
       - name: Publish
         env:
