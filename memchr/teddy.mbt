@@ -174,8 +174,9 @@ pub fn Teddy::find(
         @v128.i8x16_swizzle(hi2, @v128.i8x16_shr_u(c2, 4)),
       )
       let res = @v128.v128_and_(r0, @v128.v128_and_(r1, r2))
-      let mut m = @v128.i8x16_bitmask(@v128.i8x16_ne(res, zero))
-      if m != 0 {
+      // A cheap "any candidate" test before computing the bitmask.
+      if @v128.v128_any_true(res) {
+        let mut m = @v128.i8x16_bitmask(@v128.i8x16_ne(res, zero))
         @v128.v128_store(scratch, 0, res)
         while m != 0 {
           let j = m.ctz()

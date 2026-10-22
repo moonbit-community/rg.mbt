@@ -87,9 +87,8 @@ pub fn memchr2(
         @v128.i8x16_eq(chunk, v1),
         @v128.i8x16_eq(chunk, v2),
       )
-      let m = @v128.i8x16_bitmask(eq)
-      if m != 0 {
-        return i + m.ctz()
+      if @v128.v128_any_true(eq) {
+        return i + @v128.i8x16_bitmask(eq).ctz()
       }
       i += LANES
     }
@@ -125,9 +124,8 @@ pub fn memchr3(
         @v128.v128_or_(@v128.i8x16_eq(chunk, v1), @v128.i8x16_eq(chunk, v2)),
         @v128.i8x16_eq(chunk, v3),
       )
-      let m = @v128.i8x16_bitmask(eq)
-      if m != 0 {
-        return i + m.ctz()
+      if @v128.v128_any_true(eq) {
+        return i + @v128.i8x16_bitmask(eq).ctz()
       }
       i += LANES
     }
@@ -414,9 +412,9 @@ pub fn PairSet::find(
         @v128.v128_or_(@v128.i8x16_eq(c2, b0), @v128.i8x16_eq(c2, b1)),
         @v128.v128_or_(@v128.i8x16_eq(c2, b2), @v128.i8x16_eq(c2, b3)),
       )
-      let m = @v128.i8x16_bitmask(@v128.v128_and_(e1, e2))
-      if m != 0 {
-        return i + m.ctz()
+      let e = @v128.v128_and_(e1, e2)
+      if @v128.v128_any_true(e) {
+        return i + @v128.i8x16_bitmask(e).ctz()
       }
       i += LANES
     }
