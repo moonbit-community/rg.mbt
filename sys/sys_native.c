@@ -104,22 +104,21 @@ static moonbit_bytes_t make_bytes(const void *data, size_t len);
 
 // The host errno corresponding to a Linux errno (the inverse of
 // `linux_errno`), for displaying errors like the host's Rust std does.
-MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_host_errno(int32_t linux) {
-  // Prefer a host errno that is explicitly translated to `linux` (e.g.
+MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_host_errno(int32_t code) {
+  // Prefer a host errno that is explicitly translated to `code` (e.g.
   // macOS ELOOP 62 -> 40) over one that merely has the same number.
   for (int e = 1; e < 256; e++) {
-    if (e != linux && linux_errno(e) == linux) return e;
+    if (e != code && linux_errno(e) == code) return e;
   }
-  return linux;
+  return code;
 }
 
 // The host's description of an errno (like Rust's `io::Error` display).
 MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_strerror(int32_t e) {
-  char buf[256];
-  if (strerror_r(e, buf, sizeof buf) != 0) {
-    buf[0] = 0;
-  }
-  return make_bytes(buf, strlen(buf));
+  // (Single-threaded, so `strerror` is fine; `strerror_r` differs between
+  // the XSI and GNU variants.)
+  const char *msg = strerror(e);
+  return make_bytes(msg, strlen(msg));
 }
 
 static moonbit_bytes_t make_bytes(const void *data, size_t len) {
