@@ -39,8 +39,8 @@ case "$target" in
       echo "wasmtime is required to run the wasm integration tests" >&2
       exit 1
     }
-    moon build --release --target wasm cmd/rg >/dev/null
-    export CARGO_BIN_EXE_rg="$root/_build/wasm/release/build/cmd/rg/rg.wasm"
+    # Test the optimized module (see scripts/build_wasm.sh).
+    export CARGO_BIN_EXE_rg="$root/$(scripts/build_wasm.sh)"
     # The test harness runs the binary through `qemu-<arch>` whenever
     # CROSS_RUNNER is set (see cross_runner in tests/util.rs), so provide a
     # shim with that name that runs the module under wasmtime instead.

@@ -31,9 +31,10 @@ _build/native/release/build/cmd/rg/rg.exe --help
 # wasm, via moon's runner (paths are relative to the current directory)
 moon run --target wasm cmd/rg -- PATTERN some/dir
 
-# wasm, via wasmtime (preopen the directories you want to search)
-moon build --release --target wasm cmd/rg
-wasmtime run --dir . _build/wasm/release/build/cmd/rg/rg.wasm PATTERN .
+# wasm, via wasmtime (preopen the directories you want to search); the
+# script builds and optimizes the module (see "Performance")
+scripts/build_wasm.sh
+wasmtime run --dir . _build/wasm/release/build/cmd/rg/rg.opt.wasm PATTERN .
 ```
 
 ## Layout
@@ -99,23 +100,29 @@ ripgrep's `-j1 --no-mmap` is the same speed on a single file):
 
 | search | native | wasm (wasmtime) | wasm (moonrun / V8) |
 |---|---|---|---|
-| rare literal / no match | 1.0–1.1x | 2.0–2.1x | 2.9–3.1x |
-| case-insensitive literal (`-i`) | 1.1x | 2.2x | 2.3x |
-| alternation of literals | 1.0x | 2.0x | 2.4x |
-| regex with a literal suffix (`[A-Z][a-z]+Error`) | 1.1x | 2.7x | 3.2x |
-| regex dominated by the DFA (`\w+_\w+\(`) | 0.9x | 2.5x | 1.9x |
-| Unicode class (`\p{Greek}`) | 1.0x | 4.0x | 2.7x |
-| many matches (`-c self`, `-n self`, `-w`, `-o`) | 1.2–1.3x | 3.0–3.7x | 3.0–3.7x |
-| `-v` (every other line through the sink) | 1.3x | 3.2x | 2.9x |
-| `-C2` (context lines) | 1.6x | 5.2x | 4.2x |
+| rare literal / no match | 1.0x | 2.1x | 2.8–2.9x |
+| case-insensitive literal (`-i`) | 1.1x | 1.9x | 2.1x |
+| alternation of literals | 1.0x | 1.8x | 2.2x |
+| regex with a literal suffix (`[A-Z][a-z]+Error`) | 1.1x | 2.4x | 2.9x |
+| regex dominated by the DFA (`\w+_\w+\(`) | 0.9x | 1.9x | 1.9x |
+| Unicode class (`\p{Greek}`) | 1.0x | 2.5x | 3.0x |
+| many matches (`-c self`, `-n self`, `-w`, `-o`) | 1.2–1.3x | 2.6–3.0x | 2.7–3.2x |
+| `-v` (every other line through the sink) | 1.3x | 2.5x | 2.7x |
+| `-C2` (context lines) | 1.6x | 3.8x | 3.6x |
 
-V8 is faster on compute-heavy searches; wasmtime starts about 5 ms faster,
-which dominates short searches.
+The wasm numbers are for the module optimized by `scripts/build_wasm.sh`.
+MoonBit's wasm output calls small runtime functions for reference counting
+and bounds checks; inlining them with binaryen's `wasm-opt -O3 -aimfs=20`
+(bundled with the toolchain as `moon-wasm-opt`) makes wasm searches up to
+~40% faster (e.g. `-C2` under wasmtime went from 5.1x to 3.8x) for a ~20%
+larger module. Modules run with `moonx` come from mooncakes.io and aren't
+post-processed this way.
+
+With the optimized module the two runners are close; wasmtime is usually
+slightly faster, partly because it starts about 5 ms sooner.
 
 Searching a directory tree is at parity with `rg -j1`; ripgrep's default
-parallel search is faster on trees. On wasm, MoonBit currently emits bounds
-checks and reference counting as out-of-line runtime calls, which accounts
-for most of the remaining gap to native.
+parallel search is faster on trees.
 
 ## Differences from ripgrep
 
