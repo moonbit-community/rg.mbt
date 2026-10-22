@@ -29,6 +29,17 @@ extern "C" fn c_now_nanos() -> Int64 = "moonbit_rgsys_now_nanos"
 extern "C" fn c_is_macos() -> Int32 = "moonbit_rgsys_is_macos"
 
 ///|
+extern "C" fn c_ignore_sigpipe() = "moonbit_rgsys_ignore_sigpipe"
+
+///|
+/// Makes writes to a closed pipe fail with a broken pipe error instead of
+/// terminating the process (like Rust programs, which ignore SIGPIPE).
+/// Spawned processes still get the default disposition.
+pub fn ignore_sigpipe() -> Unit {
+  c_ignore_sigpipe()
+}
+
+///|
 #borrow(buf)
 extern "C" fn c_write_all(
   fd : Int32,

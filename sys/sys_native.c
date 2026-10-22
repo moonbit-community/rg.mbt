@@ -140,6 +140,12 @@ static int buf_push(buf_t *b, const void *data, size_t len) {
 
 MOONBIT_FFI_EXPORT void moonbit_rgsys_exit(int32_t code) { exit(code); }
 
+// Ignore SIGPIPE, as Rust programs do, so that writing to a closed pipe
+// fails with EPIPE (handled like ripgrep) instead of killing the process.
+MOONBIT_FFI_EXPORT void moonbit_rgsys_ignore_sigpipe(void) {
+  signal(SIGPIPE, SIG_IGN);
+}
+
 MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_is_macos(void) {
 #if defined(__APPLE__)
   return 1;
@@ -486,8 +492,19 @@ MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_run(moonbit_bytes_t prog,
   posix_spawn_file_actions_adddup2(&fa, out_p[1], 1);
   posix_spawn_file_actions_adddup2(&fa, err_p[1], 2);
 
+  // Like Rust's std, restore the default SIGPIPE disposition in children
+  // (the parent ignores it, see `moonbit_rgsys_ignore_sigpipe`).
+  posix_spawnattr_t attr;
+  posix_spawnattr_init(&attr);
+  sigset_t defaults;
+  sigemptyset(&defaults);
+  sigaddset(&defaults, SIGPIPE);
+  posix_spawnattr_setsigdefault(&attr, &defaults);
+  posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETSIGDEF);
+
   pid_t pid;
-  int rc = posix_spawnp(&pid, (const char *)prog, &fa, NULL, argv, RGSYS_ENVIRON);
+  int rc = posix_spawnp(&pid, (const char *)prog, &fa, &attr, argv, RGSYS_ENVIRON);
+  posix_spawnattr_destroy(&attr);
   if (rc != 0) {
     last_err = linux_errno(rc);
     goto done;

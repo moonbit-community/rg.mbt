@@ -24,6 +24,8 @@ pub fn file_times(String) -> FileTimes raise IOError
 
 pub fn hostname() -> String?
 
+pub fn ignore_sigpipe() -> Unit
+
 pub fn is_tty(Int32) -> Bool
 
 pub fn is_windows() -> Bool

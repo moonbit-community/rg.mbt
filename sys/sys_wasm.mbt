@@ -314,6 +314,12 @@ pub fn hostname() -> String? {
 }
 
 ///|
+/// A no-op on wasm (there are no signals).
+pub fn ignore_sigpipe() -> Unit {
+  ()
+}
+
+///|
 pub fn is_windows() -> Bool {
   false
 }
