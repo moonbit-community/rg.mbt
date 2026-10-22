@@ -69,6 +69,31 @@ spawn a process (`-z/--search-zip`, `--pre`), 3 rely on stdin being detected
 as readable when no path is given, and 6 search symlinks with absolute
 targets, which wasmtime's sandbox refuses to read.
 
+## Performance
+
+The hot paths (`memchr`, substring search, and Teddy for multiple
+literals) are vectorized in pure MoonBit with `moonbitlang/core/v128`, which
+lowers to NEON/SSE on native and to wasm SIMD on wasm.
+
+Time relative to ripgrep 15.2.0 (hyperfine, 170 MB text file, Apple M2 Ultra;
+ripgrep's `-j1 --no-mmap` is the same speed on a single file):
+
+| search | native | wasm (wasmtime) |
+|---|---|---|
+| rare literal / no match | 1.3x | 2.7x |
+| case-insensitive literal (`-i`) | 1.3x | 2.6x |
+| alternation of literals | 1.3x | 2.4x |
+| regex with a literal suffix (`[A-Z][a-z]+Error`) | 1.4x | 3.2x |
+| regex dominated by the DFA (`\w+_\w+\(`) | 1.0x | 2.7x |
+| Unicode class (`\p{Greek}`) | 1.0x | 4.3x |
+| printing many matching lines (`-n`) | 1.4x | 4.1x |
+| `-v` / `-C2` (many lines through the sink) | 1.7–1.8x | 5–6x |
+
+Searching a directory tree is at parity with `rg -j1`; ripgrep's default
+parallel search is faster on trees. On wasm, MoonBit currently emits bounds
+checks and reference counting as out-of-line runtime calls, which accounts
+for most of the remaining gap to native.
+
 ## Differences from ripgrep
 
 - No PCRE2 (`--pcre2` reports that PCRE2 is unavailable, like a build of
