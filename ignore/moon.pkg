@@ -1,0 +1,13 @@
+import {
+  "dii/rg/globset",
+  "dii/rg/regex",
+  "dii/rg/regex/syntax",
+  "dii/rg/regex/unicode",
+  "dii/rg/sys",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/debug",
+}
+
+supported_targets = "native+wasm"
+
+warnings = "-implicit_impl_as_method"
