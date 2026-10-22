@@ -1,0 +1,9 @@
+import {
+  "dii/rg/regex",
+  "dii/rg/regex/syntax",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/cmp",
+}
+
+warnings = "-implicit_impl_as_method"
