@@ -150,12 +150,14 @@ pub fn Regex::group_index(self : Regex, name : String) -> Int32? {
 
 ///|
 /// Searches for the end of the leftmost-first match in `hay[start:end]`,
-/// where the haystack is `hay[0:len]`. When `earliest` is true, the search
+/// where the haystack is `hay[hs:he]`. All offsets are absolute indices
+/// into `hay`. When `earliest` is true, the search
 /// may stop as soon as any match is known to exist.
 pub fn Regex::search_half(
   self : Regex,
   hay : FixedArray[Byte],
-  len : Int32,
+  hs : Int32,
+  he : Int32,
   start : Int32,
   end : Int32,
   earliest~ : Bool = false,
@@ -168,7 +170,8 @@ pub fn Regex::search_half(
   }
   let e = self.fwd.find_fwd(
     hay,
-    len,
+    hs,
+    he,
     start,
     end,
     false,
@@ -179,7 +182,8 @@ pub fn Regex::search_half(
     let slots = FixedArray::make(2, -1)
     if self.pikevm.search_slots(
         hay,
-        len,
+        hs,
+        he,
         start,
         end,
         false,
@@ -203,11 +207,12 @@ pub fn Regex::search_half(
 pub fn Regex::is_match_at(
   self : Regex,
   hay : FixedArray[Byte],
-  len : Int32,
+  hs : Int32,
+  he : Int32,
   start : Int32,
   end : Int32,
 ) -> Bool {
-  self.search_half(hay, len, start, end, earliest=true) is Some(_)
+  self.search_half(hay, hs, he, start, end, earliest=true) is Some(_)
 }
 
 ///|
@@ -215,27 +220,37 @@ pub fn Regex::is_match_at(
 pub fn Regex::find_at(
   self : Regex,
   hay : FixedArray[Byte],
-  len : Int32,
+  hs : Int32,
+  he : Int32,
   start : Int32,
   end : Int32,
 ) -> (Int32, Int32)? {
   if self.pre_is_exact {
     return self.pre.unwrap().find(hay, start, end)
   }
-  let e = self.fwd.find_fwd(hay, len, start, end, false, false, pre?=self.pre)
+  let e = self.fwd.find_fwd(
+    hay,
+    hs,
+    he,
+    start,
+    end,
+    false,
+    false,
+    pre?=self.pre,
+  )
   if e == @automata.DFA_FAILED {
-    return self.find_pikevm(hay, len, start, end)
+    return self.find_pikevm(hay, hs, he, start, end)
   }
   if e < 0 {
     return None
   }
-  let s = self.rev.find_rev(hay, len, start, e, true, false)
+  let s = self.rev.find_rev(hay, hs, he, start, e, true, false)
   if s == @automata.DFA_FAILED {
-    return self.find_pikevm(hay, len, start, end)
+    return self.find_pikevm(hay, hs, he, start, end)
   }
   if s < 0 {
     // This should never happen: a forward match implies a reverse match.
-    return self.find_pikevm(hay, len, start, end)
+    return self.find_pikevm(hay, hs, he, start, end)
   }
   Some((s, e))
 }
@@ -244,14 +259,16 @@ pub fn Regex::find_at(
 fn Regex::find_pikevm(
   self : Regex,
   hay : FixedArray[Byte],
-  len : Int32,
+  hs : Int32,
+  he : Int32,
   start : Int32,
   end : Int32,
 ) -> (Int32, Int32)? {
   let slots = FixedArray::make(2, -1)
   if self.pikevm.search_slots(
       hay,
-      len,
+      hs,
+      he,
       start,
       end,
       false,
@@ -272,7 +289,8 @@ fn Regex::find_pikevm(
 pub fn Regex::captures_at(
   self : Regex,
   hay : FixedArray[Byte],
-  len : Int32,
+  hs : Int32,
+  he : Int32,
   start : Int32,
   end : Int32,
   slots : FixedArray[Int32],
@@ -281,7 +299,7 @@ pub fn Regex::captures_at(
     slots[i] = -1
   }
   if slots.length() <= 2 {
-    match self.find_at(hay, len, start, end) {
+    match self.find_at(hay, hs, he, start, end) {
       Some((s, e)) => {
         if slots.length() > 0 {
           slots[0] = s
@@ -294,11 +312,11 @@ pub fn Regex::captures_at(
       None => return false
     }
   }
-  match self.find_at(hay, len, start, end) {
+  match self.find_at(hay, hs, he, start, end) {
     None => false
     Some((s, e)) =>
       // Run the PikeVM only on the match span to resolve capture groups.
-      self.pikevm.search_slots(hay, len, s, e, true, false, slots)
+      self.pikevm.search_slots(hay, hs, he, s, e, true, false, slots)
   }
 }
 
@@ -306,14 +324,14 @@ pub fn Regex::captures_at(
 /// Convenience: finds the first match in a byte string.
 pub fn Regex::find(self : Regex, hay : Bytes) -> (Int32, Int32)? {
   let h = hay.to_fixedarray()
-  self.find_at(h, h.length(), 0, h.length())
+  self.find_at(h, 0, h.length(), 0, h.length())
 }
 
 ///|
 /// Convenience: returns true if the regex matches anywhere in `hay`.
 pub fn Regex::is_match(self : Regex, hay : Bytes) -> Bool {
   let h = hay.to_fixedarray()
-  self.is_match_at(h, h.length(), 0, h.length())
+  self.is_match_at(h, 0, h.length(), 0, h.length())
 }
 
 ///|
@@ -326,7 +344,7 @@ pub fn Regex::find_all(self : Regex, hay : Bytes) -> Array[(Int32, Int32)] {
   let mut at = 0
   let mut last_match : Int32? = None
   while at <= len {
-    match self.find_at(h, len, at, len) {
+    match self.find_at(h, 0, len, at, len) {
       None => break
       Some((s, e)) => {
         if s == e {

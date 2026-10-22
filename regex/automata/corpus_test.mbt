@@ -117,7 +117,7 @@ test "corpus: pikevm" {
     let vm = @automata.PikeVM::new(nfa)
     ran += 1
     let find = (hay, len, start, end, anchored, slots) => {
-      vm.search_slots(hay, len, start, end, anchored, false, slots)
+      vm.search_slots(hay, 0, len, start, end, anchored, false, slots)
     }
     if run_case(tc, find, nfa.group_len()) is Some(f) {
       failures.push(f)
@@ -155,25 +155,25 @@ test "corpus: lazy dfa" {
     let rdfa = @automata.LazyDFA::new(rev, match_all=true)
     let vm = @automata.PikeVM::new(fwd)
     let find = (hay, len, start, end, anchored, slots : FixedArray[Int32]) => {
-      let e = fdfa.find_fwd(hay, len, start, end, anchored, false)
+      let e = fdfa.find_fwd(hay, 0, len, start, end, anchored, false)
       if e == @automata.DFA_FAILED {
         fallbacks += 1
-        return vm.search_slots(hay, len, start, end, anchored, false, slots)
+        return vm.search_slots(hay, 0, len, start, end, anchored, false, slots)
       }
       if e < 0 {
         return false
       }
-      let s = rdfa.find_rev(hay, len, start, e, true, false)
+      let s = rdfa.find_rev(hay, 0, len, start, e, true, false)
       if s == @automata.DFA_FAILED {
         fallbacks += 1
-        return vm.search_slots(hay, len, start, end, anchored, false, slots)
+        return vm.search_slots(hay, 0, len, start, end, anchored, false, slots)
       }
       if s < 0 {
         abort("reverse search failed to find start: \{tc.name}")
       }
       if slots.length() > 2 {
         // Captures: run the PikeVM on the match span.
-        return vm.search_slots(hay, len, s, e, true, false, slots)
+        return vm.search_slots(hay, 0, len, s, e, true, false, slots)
       }
       slots[0] = s
       slots[1] = e

@@ -507,13 +507,15 @@ fn LazyDFA::next_state(self : LazyDFA, sid : Int32, unit : Int32) -> Int32 {
 pub fn LazyDFA::find_fwd(
   self : LazyDFA,
   hay : FixedArray[Byte],
-  len : Int32,
+  hs : Int32,
+  he : Int32,
   start : Int32,
   end : Int32,
   anchored : Bool,
   earliest : Bool,
   pre? : Prefilter,
 ) -> Int32 {
+  let len = he
   let mut at = start
   let pre = if anchored { None } else { pre }
   if pre is Some(p) {
@@ -522,7 +524,7 @@ pub fn LazyDFA::find_fwd(
       Some((s, _)) => at = s
     }
   }
-  let prev = if at > 0 { hay[at - 1].to_int() } else { -1 }
+  let prev = if at > hs { hay[at - 1].to_int() } else { -1 }
   let mut sid = self.start_state(anchored, prev)
   let mut start_sid = sid
   let mut mat = DFA_NO_MATCH
@@ -551,7 +553,14 @@ pub fn LazyDFA::find_fwd(
         Some((s, _)) =>
           if s > at {
             at = s
-            sid = self.start_state(false, hay[at - 1].to_int())
+            sid = self.start_state(
+              false,
+              if at > hs {
+                hay[at - 1].to_int()
+              } else {
+                -1
+              },
+            )
             start_sid = sid
           }
       }
@@ -588,12 +597,14 @@ pub fn LazyDFA::find_fwd(
 pub fn LazyDFA::find_rev(
   self : LazyDFA,
   hay : FixedArray[Byte],
-  len : Int32,
+  hs : Int32,
+  he : Int32,
   start : Int32,
   end : Int32,
   anchored : Bool,
   earliest : Bool,
 ) -> Int32 {
+  let len = he
   let next_byte = if end < len { hay[end].to_int() } else { -1 }
   let mut sid = self.start_state(anchored, next_byte)
   let mut mat = DFA_NO_MATCH
@@ -618,7 +629,7 @@ pub fn LazyDFA::find_rev(
       }
     }
   }
-  if start > 0 {
+  if start > hs {
     sid = self.next_state(sid, hay[start - 1].to_int())
     if sid < 0 {
       return DFA_FAILED
@@ -635,7 +646,7 @@ pub fn LazyDFA::find_rev(
       return DFA_FAILED
     }
     if self.states[sid].is_match {
-      mat = 0
+      mat = hs
     }
   }
   mat

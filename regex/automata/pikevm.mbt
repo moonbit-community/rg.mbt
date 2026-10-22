@@ -65,6 +65,8 @@ priv enum Frame {
 /// time linear in the size of the haystack.
 pub struct PikeVM {
   nfa : NFA
+  priv mut hs : Int32
+  priv mut he : Int32
   priv mut curr : ActiveStates
   priv mut next : ActiveStates
   priv stack : Array[Frame]
@@ -77,6 +79,8 @@ pub fn PikeVM::new(nfa : NFA) -> PikeVM {
   let slots = nfa.group_len * 2
   {
     nfa,
+    hs: 0,
+    he: 0,
     curr: ActiveStates::new(n, slots),
     next: ActiveStates::new(n, slots),
     stack: [],
@@ -91,13 +95,14 @@ pub fn PikeVM::nfa(self : PikeVM) -> NFA {
 
 ///|
 /// Executes a leftmost-first search for a match in `hay[start:end]`, where
-/// the haystack is `hay[0:len]`. Capture positions are written into
+/// the haystack is `hay[hs:he]`. Capture positions are written into
 /// `slots` (which may be shorter than the number of slots in the regex).
 /// Returns true if a match was found.
 pub fn PikeVM::search_slots(
   self : PikeVM,
   hay : FixedArray[Byte],
-  len : Int32,
+  hs : Int32,
+  he : Int32,
   start : Int32,
   end : Int32,
   anchored : Bool,
@@ -105,6 +110,9 @@ pub fn PikeVM::search_slots(
   slots : FixedArray[Int32],
   pre? : Prefilter,
 ) -> Bool {
+  self.hs = hs
+  self.he = he
+  let len = he
   let nslots = if slots.length() < self.cache_slots {
     slots.length()
   } else {
@@ -256,7 +264,7 @@ fn PikeVM::epsilon_closure(
               break
             }
             Look(look, next) => {
-              if !look_matches(look, hay, len, at) {
+              if !look_matches(look, hay, self.hs, self.he, at) {
                 break
               }
               sid = next

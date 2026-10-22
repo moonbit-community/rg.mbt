@@ -40,7 +40,7 @@ test "corpus: meta regex" {
         break
       }
       let slots = FixedArray::make(re.captures_len() * 2, -1)
-      if !re.captures_at(hay, len, start, bend, slots) {
+      if !re.captures_at(hay, 0, len, start, bend, slots) {
         break
       }
       let s = slots[0]

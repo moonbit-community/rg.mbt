@@ -15,7 +15,7 @@ pub fn compile_nfa(@syntax.Hir, config? : NFAConfig) -> NFA raise BuildError
 
 pub fn is_word_byte(Int32) -> Bool
 
-pub fn look_matches(@syntax.Look, FixedArray[Byte], Int32, Int32, lineterm? : Int32) -> Bool
+pub fn look_matches(@syntax.Look, FixedArray[Byte], Int32, Int32, Int32, lineterm? : Int32) -> Bool
 
 pub fn memchr(Byte, FixedArray[Byte], Int32, Int32) -> Int32?
 
@@ -31,8 +31,8 @@ pub struct LazyDFA {
   // private fields
 }
 pub fn LazyDFA::clear_count(Self) -> Int32
-pub fn LazyDFA::find_fwd(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool) -> Int32
-pub fn LazyDFA::find_rev(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool) -> Int32
+pub fn LazyDFA::find_fwd(Self, FixedArray[Byte], Int32, Int32, Int32, Int32, Bool, Bool, pre? : Prefilter) -> Int32
+pub fn LazyDFA::find_rev(Self, FixedArray[Byte], Int32, Int32, Int32, Int32, Bool, Bool) -> Int32
 pub fn LazyDFA::new(NFA, match_all? : Bool, state_limit? : Int32) -> Self
 pub fn LazyDFA::state_count(Self) -> Int32
 
@@ -71,7 +71,7 @@ pub struct PikeVM {
 }
 pub fn PikeVM::new(NFA) -> Self
 pub fn PikeVM::nfa(Self) -> NFA
-pub fn PikeVM::search_slots(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool, FixedArray[Int32], pre? : Prefilter) -> Bool
+pub fn PikeVM::search_slots(Self, FixedArray[Byte], Int32, Int32, Int32, Int32, Bool, Bool, FixedArray[Int32], pre? : Prefilter) -> Bool
 
 pub(all) enum Prefilter {
   Byte(Int32)
