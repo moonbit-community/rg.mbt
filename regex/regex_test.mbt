@@ -112,3 +112,35 @@ test "unicode word boundaries after non-ASCII text" {
   assert_eq(@regex.Regex::new("a\\b").find(b"a\xC3\xA9"), None)
   assert_eq(@regex.Regex::new("a\\B").find(b"a\xC3\xA9"), Some((0, 1)))
 }
+
+///|
+fn with_size_limit(pattern : String, limit : Int32) -> Bool raise {
+  let hir = @syntax.parse(pattern)
+  let config = { ..@regex.RegexConfig::default(), nfa_size_limit: Some(limit), }
+  try {
+    @regex.Regex::from_hir(hir, config~) |> ignore
+    true
+  } catch {
+    _ => false
+  }
+}
+
+///|
+test "NFA size limits match regex-automata's accounting" {
+  // Literal searches don't build an NFA at all.
+  assert_true(with_size_limit("foo", 0))
+  assert_true(with_size_limit("foo|bar", 0))
+  assert_true(with_size_limit("[abc][123]", 0))
+  // The smallest limits accepted by ripgrep 15.2.0 (regex-automata 0.4.18).
+  for
+    case in [
+      ("a*", 280),
+      ("(a|b)*c", 416),
+      ("a{1,50}", 3800),
+      ("(a)(b)(c)", 496),
+    ] {
+    let (pattern, limit) = case
+    assert_true(with_size_limit(pattern, limit))
+    assert_false(with_size_limit(pattern, limit - 1))
+  }
+}

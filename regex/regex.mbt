@@ -61,20 +61,6 @@ pub fn Regex::from_hir(
   hir : @syntax.Hir,
   config~ : RegexConfig = RegexConfig::default(),
 ) -> Regex raise RegexError {
-  let nfa = @automata.compile_nfa(hir, config={
-    ..@automata.NFAConfig::default(),
-    size_limit: config.nfa_size_limit,
-  }) catch {
-    TooBig(n) => raise TooBig(n)
-  }
-  let rev_nfa = @automata.compile_nfa(hir, config={
-    reverse: true,
-    captures: false,
-    unanchored_prefix: false,
-    size_limit: config.nfa_size_limit,
-  }) catch {
-    TooBig(n) => raise TooBig(n)
-  }
   // Build a prefilter from prefix literals.
   let mut pre : @automata.Prefilter? = None
   let mut pre_is_exact = false
@@ -82,15 +68,32 @@ pub fn Regex::from_hir(
   seq.optimize_for_prefix_by_preference()
   if seq.literals() is Some(lits) && lits.length() > 0 {
     pre = @automata.Prefilter::new(lits.map(l => l.bytes))
-    // If the regex is just an alternation of literals and all extracted
-    // literals are exact, the prefilter is the regex.
+    // Like regex-automata's `Pre::from_prefixes`: if the extracted prefixes
+    // are exact (e.g. 'foo', '[abc][123]' or 'foo|bar') and the regex has no
+    // captures or look-around, the prefilter is the regex.
     if pre is Some(_) &&
       seq.is_exact() &&
       hir.props.look_set.is_empty() &&
-      hir.props.explicit_captures_len == 0 &&
-      (hir.props.literal || hir.props.alternation_literal) {
+      hir.props.explicit_captures_len == 0 {
       pre_is_exact = true
     }
+  }
+  // Like regex-automata's meta regex, a regex that is just a literal search
+  // doesn't need a regex engine, so the NFA size limit doesn't apply to it.
+  let size_limit = if pre_is_exact { None } else { config.nfa_size_limit }
+  let nfa = @automata.compile_nfa(hir, config={
+    ..@automata.NFAConfig::default(),
+    size_limit,
+  }) catch {
+    TooBig(n) => raise TooBig(n)
+  }
+  let rev_nfa = @automata.compile_nfa(hir, config={
+    reverse: true,
+    captures: false,
+    unanchored_prefix: false,
+    size_limit,
+  }) catch {
+    TooBig(n) => raise TooBig(n)
   }
   {
     hir,

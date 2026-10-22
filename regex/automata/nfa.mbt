@@ -161,11 +161,19 @@ priv enum BState {
 priv struct Builder {
   states : Array[BState]
   size_limit : Int32?
+  // Heap memory used by states, accounted like regex-automata's builder
+  // (8 bytes per sparse transition, 4 per union alternate).
+  mut memory_states : Int32
 }
 
 ///|
 fn Builder::add(self : Builder, s : BState) -> Int32 {
   let id = self.states.length()
+  self.memory_states += match s {
+    BSparse(trans) => trans.length() * 8
+    BUnion(alts) | BUnionReverse(alts) => alts.length() * 4
+    _ => 0
+  }
   self.states.push(s)
   id
 }
@@ -187,7 +195,10 @@ fn Builder::patch(self : Builder, from : Int32, to : Int32) -> Unit {
     BByteRange(a, b, _) => self.states[from] = BByteRange(a, b, to)
     BSparse(_) => abort("cannot patch sparse state")
     BLook(l, _) => self.states[from] = BLook(l, to)
-    BUnion(alts) | BUnionReverse(alts) => alts.push(to)
+    BUnion(alts) | BUnionReverse(alts) => {
+      alts.push(to)
+      self.memory_states += 4
+    }
     BCaptureStart(g, _) => self.states[from] = BCaptureStart(g, to)
     BCaptureEnd(g, _) => self.states[from] = BCaptureEnd(g, to)
     BFail | BMatch => ()
@@ -202,7 +213,11 @@ pub suberror BuildError {
 
 ///|
 fn Builder::check_size(self : Builder) -> Unit raise BuildError {
-  if self.size_limit is Some(limit) && self.states.length() * 16 > limit {
+  // Like regex-automata's `Builder::memory_usage`, with 32-byte states (the
+  // size of its `State` on 64-bit targets).
+  let usage = self.states.length().to_int64() * 32 +
+    self.memory_states.to_int64()
+  if self.size_limit is Some(limit) && usage > limit.to_int64() {
     raise TooBig(limit)
   }
 }
@@ -413,7 +428,7 @@ pub fn compile_nfa(
   config~ : NFAConfig = NFAConfig::default(),
 ) -> NFA raise BuildError {
   let c : Compiler = {
-    builder: { states: [], size_limit: config.size_limit, },
+    builder: { states: [], size_limit: config.size_limit, memory_states: 0, },
     config,
     group_names: {},
     max_group: 0,
