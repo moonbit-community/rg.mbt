@@ -18,6 +18,20 @@ pub fn memchr(
   let mut i = start
   if end - start >= LANES {
     let vb = @v128.i8x16_splat(b)
+    // 64 bytes at a time: a cheap "any match" test per iteration, and the
+    // (comparatively expensive) bitmask only once something matched.
+    while i + 4 * LANES <= end {
+      let e0 = @v128.i8x16_eq(@v128.v128_load(hay, i), vb)
+      let e1 = @v128.i8x16_eq(@v128.v128_load(hay, i + 16), vb)
+      let e2 = @v128.i8x16_eq(@v128.v128_load(hay, i + 32), vb)
+      let e3 = @v128.i8x16_eq(@v128.v128_load(hay, i + 48), vb)
+      if @v128.v128_any_true(
+          @v128.v128_or_(@v128.v128_or_(e0, e1), @v128.v128_or_(e2, e3)),
+        ) {
+        return i + first_set(e0, e1, e2, e3)
+      }
+      i += 4 * LANES
+    }
     while i + LANES <= end {
       let m = @v128.i8x16_bitmask(@v128.i8x16_eq(@v128.v128_load(hay, i), vb))
       if m != 0 {
@@ -33,6 +47,25 @@ pub fn memchr(
     i += 1
   }
   -1
+}
+
+///|
+/// The offset of the first set lane among four consecutive 16-lane masks
+/// (at least one lane must be set).
+fn first_set(e0 : V128, e1 : V128, e2 : V128, e3 : V128) -> Int32 {
+  let m0 = @v128.i8x16_bitmask(e0)
+  if m0 != 0 {
+    return m0.ctz()
+  }
+  let m1 = @v128.i8x16_bitmask(e1)
+  if m1 != 0 {
+    return 16 + m1.ctz()
+  }
+  let m2 = @v128.i8x16_bitmask(e2)
+  if m2 != 0 {
+    return 32 + m2.ctz()
+  }
+  48 + @v128.i8x16_bitmask(e3).ctz()
 }
 
 ///|
@@ -151,10 +184,18 @@ pub fn count(
   let mut i = start
   if end - start >= LANES {
     let vb = @v128.i8x16_splat(b)
+    // Matching lanes are all ones (-1), so subtracting the comparison from
+    // a per-lane counter adds one per match. Each lane is summed into `n`
+    // before it can overflow (at most 255 iterations).
     while i + LANES <= end {
-      let m = @v128.i8x16_bitmask(@v128.i8x16_eq(@v128.v128_load(hay, i), vb))
-      n += m.popcnt()
-      i += LANES
+      let mut acc = @v128.i8x16_splat(b'\x00')
+      let mut k = 0
+      while k < 255 && i + LANES <= end {
+        acc = @v128.i8x16_sub(acc, @v128.i8x16_eq(@v128.v128_load(hay, i), vb))
+        i += LANES
+        k += 1
+      }
+      n += hsum_u8(acc)
     }
   }
   while i < end {
@@ -164,6 +205,18 @@ pub fn count(
     i += 1
   }
   n
+}
+
+///|
+/// The sum of the 16 unsigned 8-bit lanes of `v`.
+fn hsum_u8(v : V128) -> Int32 {
+  let w = @v128.i32x4_extadd_pairwise_i16x8_u(
+    @v128.i16x8_extadd_pairwise_i8x16_u(v),
+  )
+  (@v128.i32x4_extract_lane(w, 0) +
+  @v128.i32x4_extract_lane(w, 1) +
+  @v128.i32x4_extract_lane(w, 2) +
+  @v128.i32x4_extract_lane(w, 3)).reinterpret_as_int()
 }
 
 ///|
@@ -246,6 +299,28 @@ pub fn Finder::find(
     let v1 = @v128.i8x16_splat(b1)
     let v2 = @v128.i8x16_splat(b2)
     // Loads at `i + i1` and `i + i2` stay in bounds while `i + 16 <= limit`.
+    // 32 positions at a time, with a cheap "any candidate" test first.
+    while i + 2 * LANES <= limit {
+      let e0 = @v128.v128_and_(
+        @v128.i8x16_eq(@v128.v128_load(hay, i + i1), v1),
+        @v128.i8x16_eq(@v128.v128_load(hay, i + i2), v2),
+      )
+      let e1 = @v128.v128_and_(
+        @v128.i8x16_eq(@v128.v128_load(hay, i + 16 + i1), v1),
+        @v128.i8x16_eq(@v128.v128_load(hay, i + 16 + i2), v2),
+      )
+      if @v128.v128_any_true(@v128.v128_or_(e0, e1)) {
+        let mut m = @v128.i8x16_bitmask(e0) | (@v128.i8x16_bitmask(e1) << 16)
+        while m != 0 {
+          let at = i + m.ctz()
+          if self.verify(hay, at) {
+            return at
+          }
+          m = m & (m - 1)
+        }
+      }
+      i += 2 * LANES
+    }
     while i + LANES <= limit {
       let eq = @v128.v128_and_(
         @v128.i8x16_eq(@v128.v128_load(hay, i + i1), v1),
