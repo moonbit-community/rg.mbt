@@ -99,7 +99,7 @@ fn SliceByLine::run(self : SliceByLine) -> Unit raise {
     } else {
       DEFAULT_BUFFER_CAPACITY
     }
-    if !self.core.detect_binary(self.buf, { start: 0, end: binary_upto, }) {
+    if !self.core.detect_binary(self.buf, 0, binary_upto) {
       while self.core.pos < self.buf.len && self.core.match_by_line(self.buf) {
 
       }
@@ -150,7 +150,7 @@ fn MultiLine::run(self : MultiLine) -> Unit raise {
     } else {
       DEFAULT_BUFFER_CAPACITY
     }
-    if !self.core.detect_binary(self.buf, { start: 0, end: binary_upto, }) {
+    if !self.core.detect_binary(self.buf, 0, binary_upto) {
       let mut keepgoing = true
       while self.core.pos < self.buf.len && keepgoing {
         keepgoing = self.sink()

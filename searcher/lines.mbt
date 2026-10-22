@@ -37,11 +37,44 @@ pub struct LineStep {
   line_term : Byte
   priv mut pos : Int32
   priv end : Int32
+  priv mut line_start : Int32
+  priv mut line_end : Int32
 }
 
 ///|
 pub fn LineStep::new(line_term : Byte, start : Int32, end : Int32) -> LineStep {
-  { line_term, pos: start, end, }
+  { line_term, pos: start, end, line_start: start, line_end: start, }
+}
+
+///|
+/// Advances to the next line, returning false when there are no more. The
+/// line is then `line_start()..line_end()` (relative to `off`). Unlike
+/// `next`, this doesn't allocate.
+pub fn LineStep::advance(
+  self : LineStep,
+  buf : FixedArray[Byte],
+  off : Int32,
+) -> Bool {
+  if self.pos >= self.end {
+    return false
+  }
+  let i = @memchr.memchr(self.line_term, buf, off + self.pos, off + self.end)
+  self.line_start = self.pos
+  self.line_end = if i < 0 { self.end } else { i - off + 1 }
+  self.pos = self.line_end
+  true
+}
+
+///|
+/// The start of the current line (see `advance`).
+pub fn LineStep::line_start(self : LineStep) -> Int32 {
+  self.line_start
+}
+
+///|
+/// The end of the current line (see `advance`).
+pub fn LineStep::line_end(self : LineStep) -> Int32 {
+  self.line_end
 }
 
 ///|
@@ -51,20 +84,10 @@ pub fn LineStep::next(
   buf : FixedArray[Byte],
   off : Int32,
 ) -> @matcher.Match? {
-  match find_byte(buf, self.line_term, off + self.pos, off + self.end) {
-    None =>
-      if self.pos < self.end {
-        let m : @matcher.Match = { start: self.pos, end: self.end, }
-        self.pos = self.end
-        Some(m)
-      } else {
-        None
-      }
-    Some(i) => {
-      let m : @matcher.Match = { start: self.pos, end: i - off + 1, }
-      self.pos = m.end
-      Some(m)
-    }
+  if self.advance(buf, off) {
+    Some({ start: self.line_start, end: self.line_end, })
+  } else {
+    None
   }
 }
 

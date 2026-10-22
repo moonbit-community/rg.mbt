@@ -18,8 +18,15 @@ pub fn memchr(
   let mut i = start
   if end - start >= LANES {
     let vb = @v128.i8x16_splat(b)
-    // 64 bytes at a time: a cheap "any match" test per iteration, and the
-    // (comparatively expensive) bitmask only once something matched.
+    // Check the first 16 bytes on their own: short distances (such as the
+    // next line terminator) are common.
+    let e = @v128.i8x16_eq(@v128.v128_load(hay, i), vb)
+    if @v128.v128_any_true(e) {
+      return i + @v128.i8x16_bitmask(e).ctz()
+    }
+    i += LANES
+    // Then 64 bytes at a time: a cheap "any match" test per iteration, and
+    // the (comparatively expensive) bitmask only once something matched.
     while i + 4 * LANES <= end {
       let e0 = @v128.i8x16_eq(@v128.v128_load(hay, i), vb)
       let e1 = @v128.i8x16_eq(@v128.v128_load(hay, i + 16), vb)

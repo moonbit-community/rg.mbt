@@ -58,6 +58,9 @@ pub struct LineStep {
   line_term : Byte
   // private fields
 }
+pub fn LineStep::advance(Self, FixedArray[Byte], Int32) -> Bool
+pub fn LineStep::line_end(Self) -> Int32
+pub fn LineStep::line_start(Self) -> Int32
 pub fn LineStep::new(Byte, Int32, Int32) -> Self
 pub fn LineStep::next(Self, FixedArray[Byte], Int32) -> @matcher.Match?
 

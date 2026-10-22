@@ -97,7 +97,7 @@ fn Core::binary_byte_offset_i64(self : Core) -> Int64? {
 
 ///|
 fn Core::matched(self : Core, buf : Win, range : @matcher.Match) -> Bool raise {
-  self.sink_matched(buf, range)
+  self.sink_matched(buf, range.start, range.end)
 }
 
 ///|
@@ -201,7 +201,8 @@ fn Core::roll(self : Core, buf : Win) -> Int32 {
 fn Core::detect_binary(
   self : Core,
   buf : Win,
-  range : @matcher.Match,
+  start : Int32,
+  end : Int32,
 ) -> Bool raise {
   if self.binary_byte_offset is Some(_) {
     return self.config.binary.quit_byte() is Some(_)
@@ -211,8 +212,7 @@ fn Core::detect_binary(
     BinaryConvert(b) => b
     BinaryNone => return false
   }
-  match
-    find_byte(buf.arr, binary_byte, buf.off + range.start, buf.off + range.end) {
+  match find_byte(buf.arr, binary_byte, buf.off + start, buf.off + end) {
     Some(i) => {
       let offset = i - buf.off
       self.binary_byte_offset = Some(offset)
@@ -247,11 +247,12 @@ fn Core::before_context_by_line(
       self.config.before_context - 1,
     )
   let stepper = LineStep::new(self.lineterm(), before_context_start, range.end)
-  while stepper.next(buf.arr, buf.off) is Some(line) {
-    if !self.sink_break_context(line.start) {
+  while stepper.advance(buf.arr, buf.off) {
+    let (ls, le) = (stepper.line_start(), stepper.line_end())
+    if !self.sink_break_context(ls) {
       return false
     }
-    if !self.sink_before_context(buf, line) {
+    if !self.sink_before_context(buf, ls, le) {
       return false
     }
   }
@@ -269,16 +270,17 @@ fn Core::after_context_by_line(
   }
   let exceeded_match_limit = self.has_exceeded_match_limit()
   let stepper = LineStep::new(self.lineterm(), self.last_line_visited, upto)
-  while stepper.next(buf.arr, buf.off) is Some(line) {
+  while stepper.advance(buf.arr, buf.off) {
+    let (ls, le) = (stepper.line_start(), stepper.line_end())
     if exceeded_match_limit &&
-      self.is_match(buf, line) != self.config.invert_match {
+      self.is_match(buf, { start: ls, end: le, }) != self.config.invert_match {
       let after_context_left = self.after_context_left
-      self.pos = line.end
-      if !self.sink_matched(buf, line) {
+      self.pos = le
+      if !self.sink_matched(buf, ls, le) {
         return false
       }
       self.after_context_left = after_context_left - 1
-    } else if !self.sink_after_context(buf, line) {
+    } else if !self.sink_after_context(buf, ls, le) {
       return false
     }
     if self.after_context_left == 0 {
@@ -295,8 +297,8 @@ fn Core::other_context_by_line(
   upto : Int32,
 ) -> Bool raise {
   let stepper = LineStep::new(self.lineterm(), self.last_line_visited, upto)
-  while stepper.next(buf.arr, buf.off) is Some(line) {
-    if !self.sink_other_context(buf, line) {
+  while stepper.advance(buf.arr, buf.off) {
+    if !self.sink_other_context(buf, stepper.line_start(), stepper.line_end()) {
       return false
     }
   }
@@ -330,15 +332,15 @@ fn Core::match_by_line_slow(self : Core, buf : Win) -> Bool raise {
       if !self.before_context_by_line(buf, line.start) {
         return false
       }
-      if !self.sink_matched(buf, line) {
+      if !self.sink_matched(buf, line.start, line.end) {
         return false
       }
     } else if self.after_context_left >= 1 {
-      if !self.sink_after_context(buf, line) {
+      if !self.sink_after_context(buf, line.start, line.end) {
         return false
       }
     } else if self.config.passthru {
-      if !self.sink_other_context(buf, line) {
+      if !self.sink_other_context(buf, line.start, line.end) {
         return false
       }
     }
@@ -371,7 +373,7 @@ fn Core::match_by_line_fast(self : Core, buf : Win) -> FastMatchResult raise {
         }
       }
       self.pos = line.end
-      if !self.sink_matched(buf, line) {
+      if !self.sink_matched(buf, line.start, line.end) {
         return Stop
       }
     } else {
@@ -417,9 +419,9 @@ fn Core::match_by_line_fast_invert(self : Core, buf : Win) -> Bool raise {
     invert_match.start,
     invert_match.end,
   )
-  while stepper.next(buf.arr, buf.off) is Some(line) {
+  while stepper.advance(buf.arr, buf.off) {
     self.count += 1
-    if !self.sink_matched(buf, line) {
+    if !self.sink_matched(buf, stepper.line_start(), stepper.line_end()) {
       return false
     }
     if self.has_exceeded_match_limit() {
@@ -473,29 +475,30 @@ fn Core::find_by_line_fast(self : Core, buf : Win) -> @matcher.Match? {
 fn Core::sink_matched(
   self : Core,
   buf : Win,
-  range : @matcher.Match,
+  start : Int32,
+  end : Int32,
 ) -> Bool raise {
-  if self.binary && self.detect_binary(buf, range) {
+  if self.binary && self.detect_binary(buf, start, end) {
     return false
   }
-  if !self.sink_break_context(range.start) {
+  if !self.sink_break_context(start) {
     return false
   }
-  self.count_lines(buf, range.start)
-  let offset = self.absolute_byte_offset + range.start.to_int64()
+  self.count_lines(buf, start)
+  let offset = self.absolute_byte_offset + start.to_int64()
   let mat = self.sink_match
   mat.buf = buf.arr
   mat.buf_start = buf.off
   mat.buf_len = buf.len
-  mat.start = range.start
-  mat.end = range.end
+  mat.start = start
+  mat.end = end
   mat.absolute_byte_offset = offset
   mat.line_number = self.line_number
   let keepgoing = self.sink.matched(self.searcher, mat)
   if !keepgoing {
     return false
   }
-  self.last_line_visited = range.end
+  self.last_line_visited = end
   self.after_context_left = self.config.after_context
   self.has_sunk = true
   true
@@ -505,15 +508,16 @@ fn Core::sink_matched(
 fn Core::sink_context(
   self : Core,
   buf : Win,
-  range : @matcher.Match,
+  start : Int32,
+  end : Int32,
   kind : SinkContextKind,
 ) -> Bool raise {
-  self.count_lines(buf, range.start)
-  let offset = self.absolute_byte_offset + range.start.to_int64()
+  self.count_lines(buf, start)
+  let offset = self.absolute_byte_offset + start.to_int64()
   let ctx = self.sink_ctx
   ctx.buf = buf.arr
-  ctx.start = buf.off + range.start
-  ctx.end = buf.off + range.end
+  ctx.start = buf.off + start
+  ctx.end = buf.off + end
   ctx.kind = kind
   ctx.absolute_byte_offset = offset
   ctx.line_number = self.line_number
@@ -524,15 +528,16 @@ fn Core::sink_context(
 fn Core::sink_before_context(
   self : Core,
   buf : Win,
-  range : @matcher.Match,
+  start : Int32,
+  end : Int32,
 ) -> Bool raise {
-  if self.binary && self.detect_binary(buf, range) {
+  if self.binary && self.detect_binary(buf, start, end) {
     return false
   }
-  if !self.sink_context(buf, range, Before) {
+  if !self.sink_context(buf, start, end, Before) {
     return false
   }
-  self.last_line_visited = range.end
+  self.last_line_visited = end
   self.has_sunk = true
   true
 }
@@ -541,16 +546,17 @@ fn Core::sink_before_context(
 fn Core::sink_after_context(
   self : Core,
   buf : Win,
-  range : @matcher.Match,
+  start : Int32,
+  end : Int32,
 ) -> Bool raise {
   guard self.after_context_left >= 1 else { abort("no after context left") }
-  if self.binary && self.detect_binary(buf, range) {
+  if self.binary && self.detect_binary(buf, start, end) {
     return false
   }
-  if !self.sink_context(buf, range, After) {
+  if !self.sink_context(buf, start, end, After) {
     return false
   }
-  self.last_line_visited = range.end
+  self.last_line_visited = end
   self.after_context_left -= 1
   self.has_sunk = true
   true
@@ -560,15 +566,16 @@ fn Core::sink_after_context(
 fn Core::sink_other_context(
   self : Core,
   buf : Win,
-  range : @matcher.Match,
+  start : Int32,
+  end : Int32,
 ) -> Bool raise {
-  if self.binary && self.detect_binary(buf, range) {
+  if self.binary && self.detect_binary(buf, start, end) {
     return false
   }
-  if !self.sink_context(buf, range, Other) {
+  if !self.sink_context(buf, start, end, Other) {
     return false
   }
-  self.last_line_visited = range.end
+  self.last_line_visited = end
   self.has_sunk = true
   true
 }
