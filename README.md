@@ -78,16 +78,19 @@ lowers to NEON/SSE on native and to wasm SIMD on wasm.
 Time relative to ripgrep 15.2.0 (hyperfine, 170 MB text file, Apple M2 Ultra;
 ripgrep's `-j1 --no-mmap` is the same speed on a single file):
 
-| search | native | wasm (wasmtime) |
-|---|---|---|
-| rare literal / no match | 1.3x | 2.7x |
-| case-insensitive literal (`-i`) | 1.3x | 2.6x |
-| alternation of literals | 1.3x | 2.4x |
-| regex with a literal suffix (`[A-Z][a-z]+Error`) | 1.4x | 3.2x |
-| regex dominated by the DFA (`\w+_\w+\(`) | 1.0x | 2.7x |
-| Unicode class (`\p{Greek}`) | 1.0x | 4.3x |
-| printing many matching lines (`-n`) | 1.4x | 4.1x |
-| `-v` / `-C2` (many lines through the sink) | 1.7–1.8x | 5–6x |
+| search | native | wasm (wasmtime) | wasm (moonrun / V8) |
+|---|---|---|---|
+| rare literal / no match | 1.3x | 2.7x | 3.5x |
+| case-insensitive literal (`-i`) | 1.3x | 2.6x | 2.6x |
+| alternation of literals | 1.3x | 2.4x | 2.6x |
+| regex with a literal suffix (`[A-Z][a-z]+Error`) | 1.4x | 3.2x | 3.5x |
+| regex dominated by the DFA (`\w+_\w+\(`) | 1.0x | 2.7x | 2.0x |
+| Unicode class (`\p{Greek}`) | 1.0x | 4.2x | 2.6x |
+| printing many matching lines (`-n`) | 1.4x | 4.1x | 3.6x |
+| `-v` / `-C2` (many lines through the sink) | 1.7–1.8x | 5–6x | 4.5–4.9x |
+
+V8 is faster on compute-heavy searches; wasmtime starts about 5 ms faster,
+which dominates short searches.
 
 Searching a directory tree is at parity with `rg -j1`; ripgrep's default
 parallel search is faster on trees. On wasm, MoonBit currently emits bounds
