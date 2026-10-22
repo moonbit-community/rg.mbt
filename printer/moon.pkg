@@ -14,7 +14,6 @@ import {
 } for "test"
 
 import {
-  "dii/rg/grep_regex",
   "moonbitlang/core/encoding/utf8",
 } for "wbtest"
 

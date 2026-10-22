@@ -151,6 +151,15 @@ pub impl Show for HyperlinkFormat with fn output(self, logger) {
 }
 
 ///|
+/// Formats this hyperlink format back into its string form (with any alias
+/// expanded).
+pub fn HyperlinkFormat::to_string(self : HyperlinkFormat) -> String {
+  let sb = StringBuilder()
+  Show::output(self, sb)
+  sb.to_string()
+}
+
+///|
 /// An alias for a hyperlink format.
 pub struct HyperlinkAlias {
   priv name : String

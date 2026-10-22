@@ -115,7 +115,7 @@ priv enum SpecType {
   Bg
   Style
   None
-} derive(Eq, Debug)
+}
 
 ///|
 priv enum Style {

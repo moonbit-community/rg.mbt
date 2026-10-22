@@ -1,4 +1,5 @@
 ///|
+#warnings("-result_error_return")
 fn parse_format(s : String) -> Result[HyperlinkFormat, HyperlinkFormatError] {
   try HyperlinkFormat::parse(s) catch {
     HyperlinkFormatError(_) as e => Err(e)
@@ -8,6 +9,7 @@ fn parse_format(s : String) -> Result[HyperlinkFormat, HyperlinkFormatError] {
 }
 
 ///|
+#warnings("-result_error_return")
 fn format_err(
   kind : HyperlinkFormatErrorKind,
 ) -> Result[HyperlinkFormat, HyperlinkFormatError] {
