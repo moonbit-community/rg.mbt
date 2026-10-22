@@ -124,8 +124,20 @@ fn run(cli_args : Array[String]) -> Int32 raise {
     Special(mode) => return special(mode)
     ParseOk(low) => low
   }
-  match low.mode {
-    Generate(mode) => generate(mode)
-    _ => raise RgError("search is not implemented yet")
+  let args = HiArgs::from_low_args(low)
+  let matched = match args.mode() {
+    Search(_) if !args.matches_possible() => false
+    Search(mode) => run_search(args, mode)
+    Index(_) => raise RgError(INDEXING_NOT_SUPPORTED)
+    Files => run_files(args)
+    Types => return run_types(args)
+    Generate(mode) => return generate(mode)
+  }
+  if matched && (args.quiet() || !errored()) {
+    0
+  } else if errored() {
+    2
+  } else {
+    1
   }
 }

@@ -2,6 +2,11 @@ import {
   "dii/rg/cli",
   "dii/rg/sys",
   "dii/rg/searcher",
+  "dii/rg/matcher",
+  "dii/rg/grep_regex",
+  "dii/rg/printer",
+  "dii/rg/termcolor",
+  "dii/rg/ignore",
   "moonbitlang/core/encoding/utf8",
 }
 

@@ -2,7 +2,11 @@
 package "dii/rg/core"
 
 import {
+  "dii/rg/grep_regex",
+  "dii/rg/ignore",
+  "dii/rg/printer",
   "dii/rg/searcher",
+  "dii/rg/termcolor",
   "moonbitlang/core/debug",
 }
 
@@ -183,6 +187,30 @@ pub(all) enum GenerateMode {
   CompletePowerShell
 } derive(Eq, @debug.Debug)
 
+pub struct Haystack {
+  // private fields
+}
+pub fn Haystack::is_explicit(Self) -> Bool
+pub fn Haystack::is_stdin(Self) -> Bool
+pub fn Haystack::path(Self) -> String
+
+pub struct HiArgs {
+  // private fields
+}
+pub fn HiArgs::from_low_args(LowArgs) -> Self raise RgError
+pub fn HiArgs::has_implicit_path(Self) -> Bool
+pub fn HiArgs::matcher(Self) -> @grep_regex.RegexMatcher raise RgError
+pub fn HiArgs::matches_possible(Self) -> Bool
+pub fn HiArgs::mode(Self) -> Mode
+pub fn HiArgs::printer(Self, SearchMode, &@termcolor.WriteColor) -> Printer
+pub fn HiArgs::quiet(Self) -> Bool
+pub fn HiArgs::quit_after_match(Self) -> Bool
+pub fn HiArgs::searcher(Self) -> @searcher.Searcher
+pub fn HiArgs::stats(Self) -> @printer.Stats?
+pub fn HiArgs::stdout(Self) -> &@termcolor.WriteColor
+pub fn HiArgs::threads(Self) -> Int32
+pub fn HiArgs::types(Self) -> @ignore.Types
+
 pub(all) enum IndexMode {
   Crud
 } derive(Eq, @debug.Debug)
@@ -298,6 +326,13 @@ pub(all) enum PatternSource {
   File(String)
 } derive(Eq, @debug.Debug)
 
+pub enum Printer {
+  Standard(@printer.Standard)
+  Summary(@printer.Summary)
+  JSON(@printer.JSON)
+}
+pub fn Printer::get_mut(Self) -> &@termcolor.WriteColor
+
 pub(all) enum SearchMode {
   Standard
   FilesWithMatches
@@ -326,6 +361,12 @@ pub(all) enum SpecialMode {
   VersionLong
   VersionPCRE2
 } derive(Eq, @debug.Debug)
+
+pub struct StdoutWriter {
+  // private fields
+}
+pub fn StdoutWriter::new(Int32, Bool) -> Self
+pub impl @termcolor.Write for StdoutWriter
 
 pub(all) enum TypeChange {
   Clear(String)
