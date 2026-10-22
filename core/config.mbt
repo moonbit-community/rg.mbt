@@ -30,13 +30,10 @@ pub fn parse_config_bytes(data : Bytes) -> (Array[String], Array[String]) {
     if trimmed.length() == 0 || trimmed[0] == b'#' {
       continue
     }
-    match @cli.utf8_valid_up_to(trimmed) {
-      None => args.push(@utf8.decode_lossy(trimmed))
-      Some(i) =>
-        errs.push(
-          "\{line_number}: invalid UTF-8 sequence of 1 bytes from index \{i}",
-        )
-    }
+    // On Unix, ripgrep accepts arbitrary bytes here (OS strings). Since
+    // arguments are strings in this port, invalid UTF-8 is decoded lossily.
+    ignore(line_number)
+    args.push(@utf8.decode_lossy(trimmed))
   }
   (args, errs)
 }
