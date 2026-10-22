@@ -55,6 +55,9 @@ pub struct HiArgs {
   priv mode : Mode
   priv patterns : Array[String]
   priv paths : Paths
+  /// Whether files are searched as a whole, like ripgrep does when it uses
+  /// memory maps (which changes binary detection; see `MmapChoice`).
+  priv mmap : Bool
   priv binary : BinaryDetectionPair
   priv boundary : BoundaryMode?
   priv buffer : BufferMode
@@ -417,6 +420,14 @@ pub fn HiArgs::from_low_args(low : LowArgs) -> HiArgs raise RgError {
   let patterns = patterns_from_low(state, low)
   let paths = paths_from_low(state, low)
   let binary = BinaryDetectionPair::from_low(low)
+  let mmap = @sys.mmap_supported() &&
+    (match low.mmap {
+      // If we're only searching a few paths and all of them are files, then
+      // memory maps are probably faster.
+      Auto => paths.paths.length() <= 10 && paths.paths.iter().all(is_file_path)
+      AlwaysTryMmap => true
+      Never => false
+    })
   let colors = color_specs_from_low(low)
   let hyperlink_config = hyperlink_config_from_low(low)
   let stats = stats_from_low(low)
@@ -490,6 +501,7 @@ pub fn HiArgs::from_low_args(low : LowArgs) -> HiArgs raise RgError {
     mode: low.mode,
     patterns,
     paths,
+    mmap,
     binary,
     boundary: low.boundary,
     buffer: low.buffer,

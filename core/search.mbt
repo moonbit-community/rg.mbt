@@ -158,6 +158,7 @@ priv struct SearchWorker {
   matcher : @grep_regex.RegexMatcher
   searcher : @searcher.Searcher
   printer : Printer
+  mmap : Bool
 }
 
 ///|
@@ -185,6 +186,7 @@ fn HiArgs::search_worker(
     matcher,
     searcher,
     printer,
+    mmap: self.mmap,
   }
 }
 
@@ -278,12 +280,33 @@ fn SearchWorker::search_decompress(
 }
 
 ///|
+/// What a search reads from.
+priv enum Input {
+  Reader(&@searcher.Reader)
+  /// A whole file (`buf[0:len]`), searched like ripgrep searches a memory map.
+  Slice(FixedArray[Byte], Int32)
+}
+
+///|
 fn SearchWorker::search_path(
   self : SearchWorker,
   path : String,
 ) -> SearchResult raise {
   let file = @sys.File::open(path)
-  let result = try self.search_reader(path, FileReader::{ file, }) catch {
+  let result = try {
+    // Where ripgrep would use a memory map (only possible for regular
+    // files), search the whole file as a slice: this matters because slices
+    // are searched differently (e.g. binary data isn't converted).
+    // (Files too big for an array are read incrementally instead.)
+    if self.mmap &&
+      (@sys.metadata(path).is_file() catch { _ => false }) &&
+      (@sys.file_len(path) catch { _ => -1L }) is (0L..<0x40000000L) {
+      let (buf, len) = read_all(file, path)
+      self.search_input(path, Slice(buf, len))
+    } else {
+      self.search_input(path, Reader(FileReader::{ file, }))
+    }
+  } catch {
     e => {
       file.close()
       raise e
@@ -296,25 +319,65 @@ fn SearchWorker::search_path(
 }
 
 ///|
+/// Reads all of `file` into a buffer, returning it and the number of bytes.
+fn read_all(file : @sys.File, path : String) -> (FixedArray[Byte], Int32) raise {
+  let hint = @sys.file_len(path) catch { _ => 0L }
+  let mut buf : FixedArray[Byte] = FixedArray::make(
+    hint.to_int().max(0) + 1,
+    b'\x00',
+  )
+  let mut len = 0
+  while true {
+    if len == buf.length() {
+      let bigger = FixedArray::make(buf.length() * 2, b'\x00')
+      buf.blit_to(bigger, len~)
+      buf = bigger
+    }
+    let n = @sys.read_fd(file.fd(), buf, len, buf.length() - len)
+    if n == 0 {
+      break
+    }
+    len += n
+  }
+  (buf, len)
+}
+
+///|
 fn SearchWorker::search_reader(
   self : SearchWorker,
   path : String,
   rdr : &@searcher.Reader,
 ) -> SearchResult raise {
+  self.search_input(path, Reader(rdr))
+}
+
+///|
+fn SearchWorker::search_input(
+  self : SearchWorker,
+  path : String,
+  input : Input,
+) -> SearchResult raise {
+  let run = (sink : &@searcher.Sink) => {
+    match input {
+      Reader(rdr) => self.searcher.search_reader(self.matcher, rdr, sink)
+      Slice(buf, len) =>
+        self.searcher.search_slice(self.matcher, buf, len, sink)
+    }
+  }
   match self.printer {
     Standard(p) => {
       let sink = p.sink_with_path(self.matcher, path)
-      self.searcher.search_reader(self.matcher, rdr, sink)
+      run(sink)
       { has_match: sink.has_match(), stats: sink.stats(), }
     }
     Summary(p) => {
       let sink = p.sink_with_path(self.matcher, path)
-      self.searcher.search_reader(self.matcher, rdr, sink)
+      run(sink)
       { has_match: sink.has_match(), stats: sink.stats(), }
     }
     JSON(p) => {
       let sink = p.sink_with_path(self.matcher, path)
-      self.searcher.search_reader(self.matcher, rdr, sink)
+      run(sink)
       { has_match: sink.has_match(), stats: Some(sink.stats()), }
     }
   }
