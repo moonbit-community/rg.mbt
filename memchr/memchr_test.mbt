@@ -125,3 +125,51 @@ test "pair set agrees with scalar check" {
     }
   }
 }
+
+///|
+fn naive_multi(
+  hay : FixedArray[Byte],
+  lits : Array[FixedArray[Byte]],
+  s : Int32,
+  e : Int32,
+) -> (Int32, Int32)? {
+  for i in s..<e {
+    for l in lits {
+      if naive_find(hay, l, i, e) == i {
+        return Some((i, i + l.length()))
+      }
+    }
+  }
+  None
+}
+
+///|
+test "teddy agrees with naive multi-literal search" {
+  let hay = gen(2000, 9)
+  let mut seed = 1
+  for nlits in [1, 2, 3, 8, 9, 20, 64] {
+    for minl in [1, 2, 3, 5] {
+      let lits : Array[FixedArray[Byte]] = []
+      for _ in 0..<nlits {
+        seed = seed + 1
+        let len = minl + seed % 3
+        let off = seed * 37 % (2000 - 10)
+        // Mostly literals taken from the haystack, sometimes random ones.
+        let l = if seed % 4 == 0 {
+          gen(len, seed)
+        } else {
+          FixedArray::makei(len, j => hay[off + j])
+        }
+        lits.push(l)
+      }
+      let t = @memchr.Teddy::new(lits).unwrap()
+      for s in [0, 5, 1990] {
+        for e in [2000, 1500] {
+          if s <= e {
+            assert_eq(t.find(hay, s, e), naive_multi(hay, lits, s, e))
+          }
+        }
+      }
+    }
+  }
+}

@@ -12,6 +12,9 @@ pub(all) enum Prefilter {
   ByteSet(FixedArray[Bool])
   /// A single literal of length >= 2.
   Substr(@memchr.Finder)
+  /// Several literals (at most `@memchr.teddy_max_literals`), found with
+  /// the Teddy SIMD algorithm.
+  Teddy(@memchr.Teddy)
   /// Several literals, bucketed by their first byte in priority order.
   /// Candidates are found with a SIMD pair-set filter when possible, else
   /// with the distinct first bytes (when there are at most three of them, so
@@ -71,6 +74,9 @@ pub fn Prefilter::new(lits : Array[Bytes]) -> Prefilter? {
       },
     )
   }
+  if @memchr.Teddy::new(lits.map(l => l.to_fixedarray())) is Some(t) {
+    return Some(Teddy(t))
+  }
   let buckets : Array[Array[FixedArray[Byte]]] = Array::makei(256, _ => [])
   let mut min_len = lits[0].length()
   for l in lits {
@@ -125,7 +131,7 @@ fn pair_set(lits : Array[Bytes], min_len : Int32) -> @memchr.PairSet? {
 pub fn Prefilter::is_fast(self : Prefilter) -> Bool {
   match self {
     Byte(b) => @syntax.rank(b.to_int()) < 250
-    Bytes2(_, _) | Bytes3(_, _, _) | Substr(_) => true
+    Bytes2(_, _) | Bytes3(_, _, _) | Substr(_) | Teddy(_) => true
     ByteSet(_) => false
     Multi(_, _, set, _, _) => {
       let mut n = 0
@@ -197,6 +203,7 @@ pub fn Prefilter::find(
       }
       None
     }
+    Teddy(t) => t.find(hay, start, end)
     Substr(finder) => {
       let i = finder.find(hay, start, end)
       if i < 0 {

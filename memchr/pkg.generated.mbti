@@ -12,6 +12,8 @@ pub fn memchr3(Byte, Byte, Byte, FixedArray[Byte], Int32, Int32) -> Int32
 
 pub fn memrchr(Byte, FixedArray[Byte], Int32, Int32) -> Int32
 
+pub let teddy_max_literals : Int32
+
 // Errors
 
 // Types and methods
@@ -32,6 +34,12 @@ pub struct PairSet {
 }
 pub fn PairSet::find(Self, FixedArray[Byte], Int32, Int32) -> Int32
 pub fn PairSet::new(Int32, Array[Byte], Int32, Array[Byte]) -> Self
+
+pub struct Teddy {
+  // private fields
+}
+pub fn Teddy::find(Self, FixedArray[Byte], Int32, Int32) -> (Int32, Int32)?
+pub fn Teddy::new(Array[FixedArray[Byte]]) -> Self?
 
 // Type aliases
 
