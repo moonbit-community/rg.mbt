@@ -22,7 +22,7 @@ test "default_types/default_types_aliases_are_sorted" {
     let aliases = entry.0
     for i in 1..<aliases.length() {
       if compare_utf8(aliases[i - 1], aliases[i]) > 0 {
-        fail("this alias list is not sorted: \{to_repr(aliases)}")
+        fail("this alias list is not sorted: \{Repr(aliases)}")
       }
     }
   }

@@ -85,7 +85,8 @@ fn path_join(base : String, child : String) -> String {
 }
 
 ///|
-/// Like Rust's `Path::strip_prefix` (component-wise).
+/// Like Rust's `Path::strip_prefix` (component-wise). (Only used by tests.)
+#warnings("-unused_value")
 fn path_strip_prefix(path : String, base : String) -> String? {
   let pc = path_components(path)
   let bc = path_components(base)

@@ -11,3 +11,11 @@ import {
 supported_targets = "native+wasm"
 
 warnings = "-implicit_impl_as_method"
+
+options(
+  targets: {
+    "fs_helpers_wbtest.mbt": [ "native" ],
+    "dir_fs_wbtest.mbt": [ "native" ],
+    "walk_fs_wbtest.mbt": [ "native" ],
+  },
+)
