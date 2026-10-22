@@ -2,7 +2,6 @@ import {
   "moonbit-community/rg/globset",
   "moonbit-community/rg/regex",
   "moonbit-community/rg/regex/syntax",
-  "moonbit-community/rg/regex/unicode",
   "moonbit-community/rg/sys",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/debug",

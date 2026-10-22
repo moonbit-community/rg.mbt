@@ -383,34 +383,18 @@ pub fn TypesBuilder::add_defaults(self : TypesBuilder) -> TypesBuilder {
 }
 
 ///|
-let alphabetic_ranges : Ref[Array[(Int32, Int32)]?] = { val: None, }
-
-///|
-/// Like Rust's `char::is_alphanumeric` (Unicode `Alphabetic` or `Numeric`).
+/// Like Rust's `char::is_alphanumeric`, with the Unicode version of the Rust
+/// toolchain that builds ripgrep (see `alphanumeric_ranges`).
 fn is_alphanumeric(c : Char) -> Bool {
-  if c.is_ascii() {
-    return c.is_ascii_alphabetic() || c.is_ascii_digit()
-  }
-  if c.is_numeric() {
-    return true
-  }
-  let ranges = match alphabetic_ranges.val {
-    Some(r) => r
-    None => {
-      let r = @unicode.class(Binary("Alphabetic")) catch { _ => [] }
-      alphabetic_ranges.val = Some(r)
-      r
-    }
-  }
   let x = c.to_int()
+  let r = alphanumeric_ranges
   let mut lo = 0
-  let mut hi = ranges.length()
+  let mut hi = r.length() / 2
   while lo < hi {
-    let mid = lo + (hi - lo) / 2
-    let (s, e) = ranges[mid]
-    if x < s {
+    let mid = (lo + hi) / 2
+    if x < r[2 * mid] {
       hi = mid
-    } else if x > e {
+    } else if x > r[2 * mid + 1] {
       lo = mid + 1
     } else {
       return true
