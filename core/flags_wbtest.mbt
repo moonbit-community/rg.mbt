@@ -2181,3 +2181,27 @@ test "flags/test_word_regexp" {
   let args = low(["-w", "-x"])
   assert_eq(args.boundary, Some(BoundaryMode::Line))
 }
+
+///|
+test "hyperlink_format" {
+  let fmt = (s : String) => @printer.HyperlinkFormat::parse(s).to_string()
+  let args = parse_low_raw([])
+  assert_eq(fmt("none"), fmt(args.hyperlink_format))
+  let args = parse_low_raw(["--hyperlink-format", "default"])
+  assert_eq(fmt("file://{host}{path}"), fmt(args.hyperlink_format))
+  let args = parse_low_raw(["--hyperlink-format", "file"])
+  assert_eq(fmt("file://{host}{path}"), fmt(args.hyperlink_format))
+  let args = parse_low_raw([
+    "--hyperlink-format", "file", "--hyperlink-format=grep+",
+  ])
+  assert_eq(fmt("grep+://{path}:{line}"), fmt(args.hyperlink_format))
+  let args = parse_low_raw(["--hyperlink-format", "file://{host}{path}#{line}"])
+  assert_eq(fmt("file://{host}{path}#{line}"), fmt(args.hyperlink_format))
+  let failed = try {
+    parse_low_raw(["--hyperlink-format", "file://heythere"]) |> ignore
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(failed)
+}
