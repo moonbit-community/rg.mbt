@@ -28,6 +28,7 @@ pub suberror BuildError {
 pub struct LazyDFA {
   // private fields
 }
+pub fn LazyDFA::clear_count(Self) -> Int32
 pub fn LazyDFA::find_fwd(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool) -> Int32
 pub fn LazyDFA::find_rev(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool) -> Int32
 pub fn LazyDFA::new(NFA, match_all? : Bool, state_limit? : Int32) -> Self

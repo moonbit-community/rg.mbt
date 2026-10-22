@@ -23,6 +23,8 @@ pub fn parse(String, config? : ParseConfig) -> Hir raise SyntaxError
 
 pub fn parse_ast(String, config? : ParserConfig) -> Ast raise SyntaxError
 
+pub fn rank(Int32) -> Int32
+
 pub fn translate(String, Ast, config? : TranslatorConfig) -> Hir raise SyntaxError
 
 pub fn utf8_len(Int32) -> Int32
@@ -216,6 +218,21 @@ pub(all) enum ErrorKind {
 } derive(Eq, @debug.Debug)
 pub fn ErrorKind::message(Self) -> String
 
+pub(all) enum ExtractKind {
+  Prefix
+  Suffix
+}
+
+pub(all) struct Extractor {
+  kind : ExtractKind
+  limit_class : Int32
+  limit_repeat : Int32
+  limit_literal_len : Int32
+  limit_total : Int32
+}
+pub fn Extractor::extract(Self, Hir) -> Seq
+pub fn Extractor::new() -> Self
+
 pub(all) enum Flag {
   CaseInsensitive
   MultiLine
@@ -288,6 +305,14 @@ pub(all) enum HirKind {
   Concat(Array[Hir])
   Alternation(Array[Hir])
 } derive(Eq, @debug.Debug)
+
+pub(all) struct Lit {
+  bytes : Bytes
+  exact : Bool
+} derive(Compare, Eq, @debug.Debug)
+pub fn Lit::exact(Bytes) -> Self
+pub fn Lit::inexact(Bytes) -> Self
+pub fn Lit::len(Self) -> Int32
 
 pub(all) struct Literal {
   span : Span
@@ -415,6 +440,39 @@ pub(all) enum RepetitionRange {
   AtLeast(Int32)
   Bounded(Int32, Int32)
 } derive(Eq, @debug.Debug)
+
+pub(all) struct Seq {
+  mut lits : Array[Lit]?
+} derive(Eq, @debug.Debug)
+pub fn Seq::copy(Self) -> Self
+pub fn Seq::cross_forward(Self, Self) -> Unit
+pub fn Seq::cross_reverse(Self, Self) -> Unit
+pub fn Seq::dedup(Self) -> Unit
+pub fn Seq::empty() -> Self
+pub fn Seq::infinite() -> Self
+pub fn Seq::is_empty(Self) -> Bool
+pub fn Seq::is_exact(Self) -> Bool
+pub fn Seq::is_finite(Self) -> Bool
+pub fn Seq::is_inexact(Self) -> Bool
+pub fn Seq::keep_first_bytes(Self, Int32) -> Unit
+pub fn Seq::keep_last_bytes(Self, Int32) -> Unit
+pub fn Seq::len(Self) -> Int32?
+pub fn Seq::literals(Self) -> Array[Lit]?
+pub fn Seq::longest_common_prefix(Self) -> Bytes?
+pub fn Seq::longest_common_suffix(Self) -> Bytes?
+pub fn Seq::make_inexact(Self) -> Unit
+pub fn Seq::make_infinite(Self) -> Unit
+pub fn Seq::max_cross_len(Self, Self) -> Int32?
+pub fn Seq::max_literal_len(Self) -> Int32?
+pub fn Seq::max_union_len(Self, Self) -> Int32?
+pub fn Seq::min_literal_len(Self) -> Int32?
+pub fn Seq::minimize_by_preference(Self) -> Unit
+pub fn Seq::optimize_for_prefix_by_preference(Self) -> Unit
+pub fn Seq::optimize_for_suffix_by_preference(Self) -> Unit
+pub fn Seq::push(Self, Lit) -> Unit
+pub fn Seq::singleton(Lit) -> Self
+pub fn Seq::sort(Self) -> Unit
+pub fn Seq::union(Self, Self) -> Unit
 
 pub(all) struct Span {
   start : Position
