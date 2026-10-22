@@ -83,12 +83,12 @@ fn fs_roundtrip(dir : String) -> Unit raise {
   // Metadata.
   let md = @sys.metadata(dir + "/a.txt")
   assert_eq(md.file_type, File)
-  assert_eq(md.len, 12L)
+  assert_eq(@sys.file_len(dir + "/a.txt"), 12L)
   assert_true(md.is_file())
   assert_eq(@sys.metadata(dir + "/sub").file_type, Dir)
   assert_eq(@sys.symlink_metadata(dir + "/sub").file_type, Dir)
   assert_eq(@sys.symlink_metadata(dir + "/a.txt").file_type, File)
-  assert_eq(@sys.metadata(dir + "/./sub/../a.txt").len, 12L)
+  assert_eq(@sys.file_len(dir + "/./sub/../a.txt"), 12L)
   assert_true(@sys.path_exists(dir + "/sub/deeper/c.txt"))
   assert_false(@sys.path_exists(dir + "/nope"))
 

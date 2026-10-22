@@ -995,11 +995,21 @@ fn walkdir_is_dir(dent : RawEntry) -> Bool {
 // necessary as the arguments imply a file stat.
 fn skip_filesize(
   max_filesize : UInt64,
-  _path : String,
+  path : String,
   ent : @sys.Metadata?,
 ) -> Bool {
   match ent {
-    Some(md) => md.len.reinterpret_as_uint64() > max_filesize
+    Some(md) => {
+      // The length may be unknown (on wasm); compute it only when needed.
+      let len = if md.len >= 0L {
+        md.len
+      } else {
+        @sys.file_len(path) catch {
+          _ => return false
+        }
+      }
+      len.reinterpret_as_uint64() > max_filesize
+    }
     None => false
   }
 }

@@ -809,10 +809,20 @@ fn probe_type(
   if fd < 0 {
     raise wasi_error(-fd)
   }
+  sys_close(fd)
+  // There is no fstat, and computing the length means reading the whole
+  // file, so it is left unknown (see `file_len`).
+  { file_type: File, len: -1, dev: 0, ino: 0, }
+}
+
+///|
+/// The length of the file at `path` (following symlinks).
+///
+/// On wasm there is no `fstat`, so the file is read to count its bytes.
+pub fn file_len(path : String) -> Int64 raise IOError {
+  let fd = sys_open_read(path)
   defer sys_close(fd)
-  // There is no fstat: the length is obtained by reading the whole file.
-  let len = count_bytes(fd) catch { _ => 0L }
-  { file_type: File, len, dev: 0, ino: 0, }
+  count_bytes(fd)
 }
 
 ///|

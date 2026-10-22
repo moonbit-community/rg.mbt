@@ -11,7 +11,9 @@ pub(all) enum FileType {
 /// Metadata about a file system entry.
 ///
 /// `dev` and `ino` are `0` on wasm (WASI preview1 as implemented by all
-/// supported runners does not expose them without `fd_filestat_get`).
+/// supported runners does not expose them without `fd_filestat_get`). For
+/// the same reason `len` is `-1` (unknown) for files on wasm; use `file_len`
+/// to compute it when needed.
 pub(all) struct Metadata {
   file_type : FileType
   len : Int64

@@ -18,6 +18,8 @@ pub fn env_vars() -> Array[(String, String)]
 
 pub fn exit(Int32) -> Unit
 
+pub fn file_len(String) -> Int64 raise IOError
+
 pub fn file_times(String) -> FileTimes raise IOError
 
 pub fn hostname() -> String?

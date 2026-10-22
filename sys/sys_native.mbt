@@ -334,6 +334,12 @@ fn stat_impl(path : String, follow : Bool) -> Metadata raise IOError {
 }
 
 ///|
+/// The length of the file at `path` (following symlinks).
+pub fn file_len(path : String) -> Int64 raise IOError {
+  metadata(path).len
+}
+
+///|
 /// Metadata for `path`, following symlinks.
 pub fn metadata(path : String) -> Metadata raise IOError {
   stat_impl(path, true)
