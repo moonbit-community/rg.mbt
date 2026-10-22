@@ -40,11 +40,14 @@ fn Lexer::next_source(self : Lexer) -> String? {
 }
 
 ///|
-/// Renders a value like Rust's `{:?}` for an `OsString`.
+/// Renders a value like Rust's `{:?}` for an `OsString`: named escapes,
+/// `\u{...}` for characters Rust considers non-printable or grapheme
+/// extending, and `\xNN` for bytes that aren't valid UTF-8.
 fn debug_os_string(s : String) -> String {
   let buf = StringBuilder()
   buf.write_char('"')
   for c in s {
+    let cp = c.to_int()
     match c {
       '"' => buf.write_string("\\\"")
       '\\' => buf.write_string("\\\\")
@@ -53,8 +56,12 @@ fn debug_os_string(s : String) -> String {
       '\t' => buf.write_string("\\t")
       '\u{0}' => buf.write_string("\\0")
       _ =>
-        if c.to_int() < 0x20 || c.to_int() == 0x7F {
-          buf.write_string("\\u{\{c.to_int().to_string(radix=16)}}")
+        if cp >= 0xDC80 && cp <= 0xDCFF {
+          // A byte that isn't valid UTF-8 (see `osstr`).
+          let hex = (cp - 0xDC00).to_string(radix=16).to_upper()
+          buf.write_string("\\x\{hex}")
+        } else if is_debug_escaped(cp) {
+          buf.write_string("\\u{\{cp.to_string(radix=16)}}")
         } else {
           buf.write_char(c)
         }
@@ -62,6 +69,25 @@ fn debug_os_string(s : String) -> String {
   }
   buf.write_char('"')
   buf.to_string()
+}
+
+///|
+/// Whether Rust's `{:?}` escapes the code point `cp` as `\u{...}`.
+fn is_debug_escaped(cp : Int32) -> Bool {
+  let r = debug_escape_ranges
+  let mut lo = 0
+  let mut hi = r.length() / 2
+  while lo < hi {
+    let mid = (lo + hi) / 2
+    if cp < r[2 * mid] {
+      hi = mid
+    } else if cp > r[2 * mid + 1] {
+      lo = mid + 1
+    } else {
+      return true
+    }
+  }
+  false
 }
 
 ///|

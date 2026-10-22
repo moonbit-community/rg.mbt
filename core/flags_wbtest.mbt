@@ -2217,3 +2217,12 @@ test "number overflow is reported before later invalid digits" {
   }
   assert_true(msg.contains("number too large to fit in target type"))
 }
+
+///|
+test "debug_os_string escapes like Rust" {
+  assert_eq(debug_os_string("a\u{A0}b"), "\"a\\u{a0}b\"")
+  assert_eq(debug_os_string("x\u{301}"), "\"x\\u{301}\"")
+  assert_eq(debug_os_string("é日本😀"), "\"é日本😀\"")
+  assert_eq(debug_os_string(@osstr.decode(b"a\xFF")), "\"a\\xFF\"")
+  assert_eq(debug_os_string("\"\\\n"), "\"\\\"\\\\\\n\"")
+}
