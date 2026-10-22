@@ -8,6 +8,9 @@
 /// demo ls DIR             list a directory with file types
 /// demo stat PATH          metadata and symlink_metadata of PATH
 /// demo cat FILE...        copy files to stdout
+/// demo write PATH TEXT    create/truncate PATH with TEXT
+/// demo mkdir PATH...      create directories (with parents)
+/// demo rmtree PATH...     remove directory trees
 /// demo stdin              copy stdin to stdout
 /// demo run PROG ARGS...   run a program and show its output
 /// ```
@@ -120,6 +123,20 @@ fn run(cmd : String, rest : Array[String]) -> Unit raise @sys.IOError {
         let f = @sys.File::open(p)
         defer f.close()
         ignore(copy_fd(f.fd()))
+      }
+    "write" => {
+      guard rest is [path, text] else {
+        raise @sys.IOError::other(InvalidInput, "usage: demo write PATH TEXT")
+      }
+      @sys.write_file(path, @utf8.encode(text))
+    }
+    "mkdir" =>
+      for p in rest {
+        @sys.create_dir_all(p)
+      }
+    "rmtree" =>
+      for p in rest {
+        @sys.remove_dir_all(p)
       }
     "stdin" => {
       let n = copy_fd(0)
