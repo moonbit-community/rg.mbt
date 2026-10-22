@@ -21,4 +21,4 @@ It also contains data derived from the following projects:
 - **Encoding indexes** (`searcher/encoding_data.mbt`), generated from the
   index files of the [WHATWG Encoding Standard](https://encoding.spec.whatwg.org/).
   Copyright (c) WHATWG (Apple, Google, Mozilla, Microsoft). Licensed under
-  the BSD 3-Clause license.
+  the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
