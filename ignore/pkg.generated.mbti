@@ -102,7 +102,9 @@ pub fn[T] Match::is_whitelist(Self[T]) -> Bool
 pub fn[T, U] Match::map(Self[T], (T) -> U) -> Self[U]
 pub fn[T] Match::or(Self[T], Self[T]) -> Self[T]
 
-pub struct Override(Gitignore) derive(@debug.Debug)
+pub struct Override {
+  // private fields
+} derive(@debug.Debug)
 pub fn Override::empty() -> Self
 pub fn Override::is_empty(Self) -> Bool
 pub fn Override::matched(Self, String, Bool) -> Match[OverrideGlob]
