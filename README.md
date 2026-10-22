@@ -90,21 +90,24 @@ names that aren't valid UTF-8. CI runs both suites on Linux.
 
 The hot paths (`memchr`, substring search, and Teddy for multiple
 literals) are vectorized in pure MoonBit with `moonbitlang/core/v128`, which
-lowers to NEON/SSE on native and to wasm SIMD on wasm.
+lowers to NEON/SSE on native and to wasm SIMD on wasm. Like Rust's `memchr`,
+they test 32–64 bytes per step with a cheap "any match" check, and the
+search loops avoid allocating per line or per match.
 
 Time relative to ripgrep 15.2.0 (hyperfine, 170 MB text file, Apple M2 Ultra;
 ripgrep's `-j1 --no-mmap` is the same speed on a single file):
 
 | search | native | wasm (wasmtime) | wasm (moonrun / V8) |
 |---|---|---|---|
-| rare literal / no match | 1.3x | 2.7x | 3.5x |
-| case-insensitive literal (`-i`) | 1.3x | 2.6x | 2.6x |
-| alternation of literals | 1.3x | 2.4x | 2.6x |
-| regex with a literal suffix (`[A-Z][a-z]+Error`) | 1.4x | 3.2x | 3.5x |
-| regex dominated by the DFA (`\w+_\w+\(`) | 1.0x | 2.7x | 2.0x |
-| Unicode class (`\p{Greek}`) | 1.0x | 4.2x | 2.6x |
-| printing many matching lines (`-n`) | 1.4x | 4.1x | 3.6x |
-| `-v` / `-C2` (many lines through the sink) | 1.7–1.8x | 5–6x | 4.5–4.9x |
+| rare literal / no match | 1.0–1.1x | 2.0–2.1x | 2.9–3.1x |
+| case-insensitive literal (`-i`) | 1.1x | 2.2x | 2.3x |
+| alternation of literals | 1.0x | 2.0x | 2.4x |
+| regex with a literal suffix (`[A-Z][a-z]+Error`) | 1.1x | 2.7x | 3.2x |
+| regex dominated by the DFA (`\w+_\w+\(`) | 0.9x | 2.5x | 1.9x |
+| Unicode class (`\p{Greek}`) | 1.0x | 4.0x | 2.7x |
+| many matches (`-c self`, `-n self`, `-w`, `-o`) | 1.2–1.3x | 3.0–3.7x | 3.0–3.7x |
+| `-v` (every other line through the sink) | 1.3x | 3.2x | 2.9x |
+| `-C2` (context lines) | 1.6x | 5.2x | 4.2x |
 
 V8 is faster on compute-heavy searches; wasmtime starts about 5 ms faster,
 which dominates short searches.
