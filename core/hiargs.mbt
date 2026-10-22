@@ -153,6 +153,9 @@ fn patterns_from_low(
       raise RgError("ripgrep requires at least one pattern to execute a search")
     }
     let pat = low.positional.remove(0)
+    if @osstr.has_escapes(pat) {
+      raise RgError("pattern given is not valid UTF-8")
+    }
     return [pat]
   }
   let seen : Map[String, Unit] = Map([])
@@ -357,7 +360,13 @@ fn hostname(bin : String?) -> String? {
     _ => return @cli.hostname()
   }
   let out = rdr.read_to_end() catch { _ => return @cli.hostname() }
-  let host = @utf8.decode_lossy(out).trim().to_owned()
+  // Like `std::io::read_to_string`, output that isn't valid UTF-8 is an
+  // error (falling back to the platform hostname).
+  let out = @osstr.decode(out)
+  if @osstr.has_escapes(out) {
+    return @cli.hostname()
+  }
+  let host = @osstr.trim_white_space(out)
   if host.is_empty() {
     return @cli.hostname()
   }
@@ -573,7 +582,7 @@ pub fn HiArgs::from_low_args(low : LowArgs) -> HiArgs raise RgError {
 ///|
 fn suggest_multiline(msg : String) -> String {
   if msg.contains("the literal") && msg.contains("not allowed") {
-    "\{msg}\nConsider enabling multiline mode with the --multiline flag (or -U for short).\nWhen multiline mode is enabled, new line characters can be matched."
+    "\{msg}\n\nConsider enabling multiline mode with the --multiline flag (or -U for short).\nWhen multiline mode is enabled, new line characters can be matched."
   } else {
     msg
   }
@@ -582,7 +591,7 @@ fn suggest_multiline(msg : String) -> String {
 ///|
 fn suggest_text(msg : String) -> String {
   if msg.contains("pattern contains \"\\0\"") {
-    "\{msg}\nConsider enabling text mode with the --text flag (or -a for short). Otherwise,\nbinary detection is enabled and matching a NUL byte is impossible."
+    "\{msg}\n\nConsider enabling text mode with the --text flag (or -a for short). Otherwise,\nbinary detection is enabled and matching a NUL byte is impossible."
   } else {
     msg
   }

@@ -2205,3 +2205,15 @@ test "hyperlink_format" {
   }
   assert_true(failed)
 }
+
+///|
+test "number overflow is reported before later invalid digits" {
+  // Like Rust's integer parsing, the first problem wins.
+  let msg = try {
+    parse_low_raw(["--max-count=184467440737095516160x"]) |> ignore
+    ""
+  } catch {
+    RgError(m) => m
+  }
+  assert_true(msg.contains("number too large to fit in target type"))
+}

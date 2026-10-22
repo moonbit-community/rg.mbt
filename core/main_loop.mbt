@@ -109,7 +109,7 @@ fn compare_paths(a : String, b : String) -> Int32 {
   let cb = path_components(b)
   let n = if ca.length() < cb.length() { ca.length() } else { cb.length() }
   for i in 0..<n {
-    let c = compare_bytes_lex(@utf8.encode(ca[i]), @utf8.encode(cb[i]))
+    let c = compare_bytes_lex(@osstr.encode(ca[i]), @osstr.encode(cb[i]))
     if c != 0 {
       return c
     }

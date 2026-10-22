@@ -17,7 +17,8 @@ pub struct Candidate {
 ///
 /// The path is encoded as UTF-8 before matching.
 pub fn Candidate::new(path : String) -> Candidate {
-  Candidate::from_bytes(@utf8.encode(path))
+  // Paths are OS strings: match their original bytes.
+  Candidate::from_bytes(@osstr.encode(path))
 }
 
 ///|

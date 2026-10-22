@@ -14,38 +14,17 @@ pub fn parse_config_bytes(data : Bytes) -> (Array[String], Array[String]) {
       end += 1
     }
     line_number += 1
-    // Trim ASCII/Unicode whitespace like bstr's `trim` on the line
-    // (including its terminator).
-    let line = data[start:end]
-    let mut s = 0
-    let mut e = line.length()
-    while s < e && is_ascii_ws(line[s]) {
-      s += 1
-    }
-    while e > s && is_ascii_ws(line[e - 1]) {
-      e -= 1
-    }
-    let trimmed = line[s:e]
+    // Decode losslessly (ripgrep accepts arbitrary bytes here) and trim
+    // Unicode whitespace like bstr's `trim`.
+    let line = @osstr.trim_white_space(@osstr.decode(data[start:end]))
     start = end + 1
-    if trimmed.length() == 0 || trimmed[0] == b'#' {
+    if line.is_empty() || line.has_prefix("#") {
       continue
     }
-    // On Unix, ripgrep accepts arbitrary bytes here (OS strings). Since
-    // arguments are strings in this port, invalid UTF-8 is decoded lossily.
     ignore(line_number)
-    args.push(@utf8.decode_lossy(trimmed))
+    args.push(line)
   }
   (args, errs)
-}
-
-///|
-fn is_ascii_ws(b : Byte) -> Bool {
-  b == b' ' ||
-  b == b'\t' ||
-  b == b'\n' ||
-  b == b'\r' ||
-  b == b'\x0B' ||
-  b == b'\x0C'
 }
 
 ///|

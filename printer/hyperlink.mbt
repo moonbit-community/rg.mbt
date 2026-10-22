@@ -611,7 +611,7 @@ fn HyperlinkPath::from_path(
     return None
   }
   let bytes = @termcolor.ByteVec::new()
-  bytes.extend_string(path)
+  bytes.extend_bytes(@osstr.encode(path))
   Some(HyperlinkPath::encode(bytes.storage(), 0, bytes.length()))
 }
 

@@ -17,22 +17,19 @@ fn parse_u64(s : String) -> UInt64 raise RgError {
   }
   let max = 0xFFFFFFFFFFFFFFFFUL
   let mut v : UInt64 = 0
-  let mut overflow = false
   while i < chars.length() {
     let c = chars[i]
     if c < '0' || c > '9' {
       raise RgError("invalid digit found in string")
     }
     let d = (c.to_int() - '0'.to_int()).to_uint64()
+    // Like Rust's integer parsing, report overflow as soon as it happens
+    // (even if an invalid digit follows).
     if v > (max - d) / 10 {
-      overflow = true
-    } else {
-      v = v * 10 + d
+      raise RgError("number too large to fit in target type")
     }
+    v = v * 10 + d
     i += 1
-  }
-  if overflow {
-    raise RgError("number too large to fit in target type")
   }
   v
 }
@@ -80,6 +77,16 @@ fn check_indexing_allowed() -> Unit raise RgError {
 }
 
 ///|
+/// Flags whose values must be valid UTF-8.
+let utf8_flags : Array[String] = [
+  "after-context", "before-context", "color", "colors", "context", "dfa-size-limit",
+  "encoding", "engine", "generate", "glob", "hyperlink-format", "iglob", "max-columns",
+  "max-count", "max-depth", "max-filesize", "path-separator", "pre-glob", "regex-size-limit",
+  "regexp", "replace", "sort", "sortr", "threads", "type", "type-add", "type-clear",
+  "type-not",
+]
+
+///|
 /// Applies a flag's value to the low level arguments, mirroring each
 /// flag's `update` method in ripgrep's `defs.rs`.
 fn update_flag(
@@ -87,6 +94,13 @@ fn update_flag(
   v : FlagValue,
   args : LowArgs,
 ) -> Unit raise RgError {
+  // Like ripgrep's `convert::str`/`convert::string`, these flags reject
+  // values that aren't valid UTF-8 (other values are OS strings).
+  if v is Value(value) &&
+    utf8_flags.contains(flag.name_long) &&
+    @osstr.has_escapes(value) {
+    raise RgError("value is not valid UTF-8")
+  }
   match flag.name_long {
     "regexp" => args.patterns.push(Regexp(v.unwrap_value()))
     "file" => args.patterns.push(File(v.unwrap_value()))

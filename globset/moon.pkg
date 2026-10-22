@@ -1,4 +1,5 @@
 import {
+  "moonbit-community/rg/osstr",
   "moonbit-community/rg/regex",
   "moonbit-community/rg/regex/syntax",
   "moonbitlang/core/encoding/utf8",

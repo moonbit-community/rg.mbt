@@ -33,3 +33,13 @@ test "every byte pair round trips" {
     }
   }
 }
+
+///|
+test "lossy display and whitespace" {
+  assert_eq(@osstr.to_lossy(@osstr.decode(b"bad\xFF")), "bad\u{FFFD}")
+  // One replacement per maximal invalid sequence, like Rust.
+  assert_eq(@osstr.to_lossy(@osstr.decode(b"a\xE2\x82b")), "a\u{FFFD}b")
+  assert_eq(@osstr.to_lossy("plain"), "plain")
+  assert_eq(@osstr.trim_white_space("\u{A0} x y\u{3000}\n"), "x y")
+  assert_eq(@osstr.trim_white_space("\u{200B}x"), "\u{200B}x")
+}

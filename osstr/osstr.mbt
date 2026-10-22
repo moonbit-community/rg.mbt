@@ -126,3 +126,41 @@ pub fn has_escapes(s : String) -> Bool {
   }
   false
 }
+
+///|
+/// A string for display: escaped bytes are replaced like Rust's lossy
+/// conversions (one U+FFFD per maximal invalid sequence), e.g. for paths
+/// in error messages.
+pub fn to_lossy(s : String) -> String {
+  if has_escapes(s) {
+    @utf8.decode_lossy(encode(s))
+  } else {
+    s
+  }
+}
+
+///|
+/// Returns true if `c` has the Unicode White_Space property (what Rust's
+/// `str::trim` and bstr's `trim` remove).
+pub fn is_white_space(c : Char) -> Bool {
+  match c.to_int() {
+    0x09..<=0x0D | 0x20 | 0x85 | 0xA0 | 0x1680 | 0x2000..<=0x200A => true
+    0x2028 | 0x2029 | 0x202F | 0x205F | 0x3000 => true
+    _ => false
+  }
+}
+
+///|
+/// Trims Unicode White_Space from both ends of `s`.
+pub fn trim_white_space(s : String) -> String {
+  let chars = s.to_array()
+  let mut i = 0
+  let mut j = chars.length()
+  while i < j && is_white_space(chars[i]) {
+    i += 1
+  }
+  while j > i && is_white_space(chars[j - 1]) {
+    j -= 1
+  }
+  String::from_array(chars[i:j])
+}

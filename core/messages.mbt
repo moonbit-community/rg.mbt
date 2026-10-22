@@ -15,7 +15,9 @@ let log_level : Ref[Int32] = Ref(0)
 /// Writes a line to stderr prefixed with `rg: `. If writing fails, the
 /// process exits (with 0 on a broken pipe, like ripgrep).
 pub fn eprintln_locked(msg : String) -> Unit {
-  let bytes = @utf8.encode("rg: " + msg + "\n").to_fixedarray()
+  // Messages may contain OS strings (paths); display them lossily, like
+  // Rust's `Path::display`.
+  let bytes = @utf8.encode("rg: " + @osstr.to_lossy(msg) + "\n").to_fixedarray()
   @sys.write_fd(2, bytes, 0, bytes.length()) catch {
     e => if e.kind() is BrokenPipe { @sys.exit(0) } else { @sys.exit(2) }
   }

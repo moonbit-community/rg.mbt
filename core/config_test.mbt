@@ -14,12 +14,24 @@ test "config basic" {
 
 ///|
 test "config error" {
+  // Like ripgrep on Unix, arguments keep arbitrary bytes (as OS strings).
   let (args, errs) = @core.parse_config_bytes(b"quux\nfoo\xFFbar\nbaz\n")
+  assert_eq(args.length(), 3)
+  assert_eq(args[0], "quux")
+  assert_eq(@osstr.encode(args[1]), b"foo\xFFbar")
+  assert_eq(args[2], "baz")
+  inspect(errs.length(), content="0")
+}
+
+///|
+test "config trims unicode whitespace" {
+  let (args, _) = @core.parse_config_bytes(
+    b"\xC2\xA0--ignore-case\xC2\xA0\n\xE3\x80\x80# comment\n\xE2\x80\xA8\n",
+  )
   debug_inspect(
     args,
     content=(
-      #|["quux", "foo�bar", "baz"]
+      #|["--ignore-case"]
     ),
   )
-  inspect(errs.length(), content="0")
 }
