@@ -7,6 +7,10 @@ import {
 }
 
 // Values
+pub const DFA_FAILED : Int32 = -2
+
+pub const DFA_NO_MATCH : Int32 = -1
+
 pub fn compile_nfa(@syntax.Hir, config? : NFAConfig) -> NFA raise BuildError
 
 pub fn is_word_byte(Int32) -> Bool
@@ -21,6 +25,14 @@ pub suberror BuildError {
 } derive(@debug.Debug)
 
 // Types and methods
+pub struct LazyDFA {
+  // private fields
+}
+pub fn LazyDFA::find_fwd(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool) -> Int32
+pub fn LazyDFA::find_rev(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool) -> Int32
+pub fn LazyDFA::new(NFA, match_all? : Bool, state_limit? : Int32) -> Self
+pub fn LazyDFA::state_count(Self) -> Int32
+
 pub struct NFA {
   states : Array[State]
   start_anchored : Int32

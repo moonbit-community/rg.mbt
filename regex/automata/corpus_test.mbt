@@ -129,3 +129,63 @@ test "corpus: pikevm" {
   inspect(failures.length(), content="0")
   inspect(ran > 600, content="true")
 }
+
+///|
+test "corpus: lazy dfa" {
+  let failures = []
+  let mut fallbacks = 0
+  for tc in @testdata.cases {
+    if tc.name.has_prefix("regex-lite/") || tc.line_terminator is Some(_) {
+      continue
+    }
+    let hir = match parse_case(tc) {
+      None => continue
+      Some(h) => h
+    }
+    let fwd = @automata.compile_nfa(hir) catch { _ => abort("nfa") }
+    let rev = @automata.compile_nfa(hir, config={
+      reverse: true,
+      captures: false,
+      unanchored_prefix: false,
+      size_limit: None,
+    }) catch {
+      _ => abort("nfa")
+    }
+    let fdfa = @automata.LazyDFA::new(fwd)
+    let rdfa = @automata.LazyDFA::new(rev, match_all=true)
+    let vm = @automata.PikeVM::new(fwd)
+    let find = (hay, len, start, end, anchored, slots : FixedArray[Int32]) => {
+      let e = fdfa.find_fwd(hay, len, start, end, anchored, false)
+      if e == @automata.DFA_FAILED {
+        fallbacks += 1
+        return vm.search_slots(hay, len, start, end, anchored, false, slots)
+      }
+      if e < 0 {
+        return false
+      }
+      let s = rdfa.find_rev(hay, len, start, e, true, false)
+      if s == @automata.DFA_FAILED {
+        fallbacks += 1
+        return vm.search_slots(hay, len, start, end, anchored, false, slots)
+      }
+      if s < 0 {
+        abort("reverse search failed to find start: \{tc.name}")
+      }
+      if slots.length() > 2 {
+        // Captures: run the PikeVM on the match span.
+        return vm.search_slots(hay, len, s, e, true, false, slots)
+      }
+      slots[0] = s
+      slots[1] = e
+      true
+    }
+    if run_case(tc, find, fwd.group_len()) is Some(f) {
+      failures.push(f)
+    }
+  }
+  for f in failures {
+    println(f)
+  }
+  inspect(failures.length(), content="0")
+  inspect(fallbacks > 0, content="true")
+}
