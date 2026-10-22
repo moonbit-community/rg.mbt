@@ -9,15 +9,18 @@ pub(all) struct SinkFinish {
 /// A matching line (or lines, in multi-line mode). The matched bytes are
 /// `buf[buf_start + start : buf_start + end]`, where `buf[buf_start :
 /// buf_start + buf_len]` is the buffer being searched.
+///
+/// Like Rust's `&SinkMatch`, a value passed to a sink is only valid for the
+/// duration of the call: the searcher reuses it for subsequent matches.
 pub(all) struct SinkMatch {
-  line_term : @matcher.LineTerminator
-  buf : FixedArray[Byte]
-  buf_start : Int32
-  buf_len : Int32
-  start : Int32
-  end : Int32
-  absolute_byte_offset : Int64
-  line_number : Int64?
+  mut line_term : @matcher.LineTerminator
+  mut buf : FixedArray[Byte]
+  mut buf_start : Int32
+  mut buf_len : Int32
+  mut start : Int32
+  mut end : Int32
+  mut absolute_byte_offset : Int64
+  mut line_number : Int64?
 }
 
 ///|
@@ -44,14 +47,17 @@ pub(all) enum SinkContextKind {
 
 ///|
 /// A context line.
+///
+/// Like `SinkMatch`, a value passed to a sink is only valid for the duration
+/// of the call.
 pub(all) struct SinkContext {
-  line_term : @matcher.LineTerminator
-  buf : FixedArray[Byte]
-  start : Int32
-  end : Int32
-  kind : SinkContextKind
-  absolute_byte_offset : Int64
-  line_number : Int64?
+  mut line_term : @matcher.LineTerminator
+  mut buf : FixedArray[Byte]
+  mut start : Int32
+  mut end : Int32
+  mut kind : SinkContextKind
+  mut absolute_byte_offset : Int64
+  mut line_number : Int64?
 }
 
 ///|

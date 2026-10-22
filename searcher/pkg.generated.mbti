@@ -124,13 +124,13 @@ pub(all) struct SearcherConfig {
 pub fn SearcherConfig::default() -> Self
 
 pub(all) struct SinkContext {
-  line_term : @matcher.LineTerminator
-  buf : FixedArray[Byte]
-  start : Int32
-  end : Int32
-  kind : SinkContextKind
-  absolute_byte_offset : Int64
-  line_number : Int64?
+  mut line_term : @matcher.LineTerminator
+  mut buf : FixedArray[Byte]
+  mut start : Int32
+  mut end : Int32
+  mut kind : SinkContextKind
+  mut absolute_byte_offset : Int64
+  mut line_number : Int64?
 }
 pub fn SinkContext::bytes(Self) -> Bytes
 pub fn SinkContext::lines(Self) -> Array[Bytes]
@@ -147,14 +147,14 @@ pub(all) struct SinkFinish {
 } derive(@debug.Debug)
 
 pub(all) struct SinkMatch {
-  line_term : @matcher.LineTerminator
-  buf : FixedArray[Byte]
-  buf_start : Int32
-  buf_len : Int32
-  start : Int32
-  end : Int32
-  absolute_byte_offset : Int64
-  line_number : Int64?
+  mut line_term : @matcher.LineTerminator
+  mut buf : FixedArray[Byte]
+  mut buf_start : Int32
+  mut buf_len : Int32
+  mut start : Int32
+  mut end : Int32
+  mut absolute_byte_offset : Int64
+  mut line_number : Int64?
 }
 pub fn SinkMatch::bytes(Self) -> Bytes
 pub fn SinkMatch::lines(Self) -> Array[Bytes]

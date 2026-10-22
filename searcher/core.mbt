@@ -31,6 +31,9 @@ priv struct Core {
   mut has_sunk : Bool
   mut has_matched : Bool
   mut count : Int64
+  /// Reused for every call to the sink (see `SinkMatch`).
+  sink_match : SinkMatch
+  sink_ctx : SinkContext
 }
 
 ///|
@@ -60,6 +63,25 @@ fn Core::new(
     has_sunk: false,
     has_matched: false,
     count: 0,
+    sink_match: {
+      line_term: searcher.config.line_term,
+      buf: [],
+      buf_start: 0,
+      buf_len: 0,
+      start: 0,
+      end: 0,
+      absolute_byte_offset: 0,
+      line_number: None,
+    },
+    sink_ctx: {
+      line_term: searcher.config.line_term,
+      buf: [],
+      start: 0,
+      end: 0,
+      kind: Other,
+      absolute_byte_offset: 0,
+      line_number: None,
+    },
   }
 }
 
@@ -461,16 +483,15 @@ fn Core::sink_matched(
   }
   self.count_lines(buf, range.start)
   let offset = self.absolute_byte_offset + range.start.to_int64()
-  let keepgoing = self.sink.matched(self.searcher, {
-    line_term: self.config.line_term,
-    buf: buf.arr,
-    buf_start: buf.off,
-    buf_len: buf.len,
-    start: range.start,
-    end: range.end,
-    absolute_byte_offset: offset,
-    line_number: self.line_number,
-  })
+  let mat = self.sink_match
+  mat.buf = buf.arr
+  mat.buf_start = buf.off
+  mat.buf_len = buf.len
+  mat.start = range.start
+  mat.end = range.end
+  mat.absolute_byte_offset = offset
+  mat.line_number = self.line_number
+  let keepgoing = self.sink.matched(self.searcher, mat)
   if !keepgoing {
     return false
   }
@@ -489,15 +510,14 @@ fn Core::sink_context(
 ) -> Bool raise {
   self.count_lines(buf, range.start)
   let offset = self.absolute_byte_offset + range.start.to_int64()
-  self.sink.context(self.searcher, {
-    line_term: self.config.line_term,
-    buf: buf.arr,
-    start: buf.off + range.start,
-    end: buf.off + range.end,
-    kind,
-    absolute_byte_offset: offset,
-    line_number: self.line_number,
-  })
+  let ctx = self.sink_ctx
+  ctx.buf = buf.arr
+  ctx.start = buf.off + range.start
+  ctx.end = buf.off + range.end
+  ctx.kind = kind
+  ctx.absolute_byte_offset = offset
+  ctx.line_number = self.line_number
+  self.sink.context(self.searcher, ctx)
 }
 
 ///|
