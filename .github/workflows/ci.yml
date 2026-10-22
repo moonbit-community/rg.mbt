@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
 
@@ -57,7 +57,7 @@ jobs:
       # The ripgrep revision this port follows (15.2.0 + ignore-0.4.33).
       RIPGREP_REV: 3fce3b5bb0236da2df6d99672afb8a719642eca7
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
 
