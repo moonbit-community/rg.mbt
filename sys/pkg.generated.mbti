@@ -18,6 +18,8 @@ pub fn env_vars() -> Array[(String, String)]
 
 pub fn exit(Int32) -> Unit
 
+pub fn file_times(String) -> FileTimes raise IOError
+
 pub fn hostname() -> String?
 
 pub fn is_tty(Int32) -> Bool
@@ -78,6 +80,12 @@ pub fn File::close(Self) -> Unit
 pub fn File::fd(Self) -> Int32
 pub fn File::open(String) -> Self raise IOError
 pub fn File::read(Self, FixedArray[Byte], Int32, Int32) -> Int32 raise IOError
+
+pub(all) struct FileTimes {
+  modified : Int64?
+  accessed : Int64?
+  created : Int64?
+} derive(Eq, @debug.Debug)
 
 pub(all) enum FileType {
   File

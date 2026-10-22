@@ -909,3 +909,11 @@ pub fn run_command(
   ignore(stdin_path)
   raise unsupported()
 }
+
+///|
+/// File timestamps are not available on wasm (no `fd_filestat_get` in the
+/// supported WASI subset).
+pub fn file_times(path : String) -> FileTimes raise IOError {
+  ignore(path)
+  raise IOError::other(Unsupported, "operation not supported on this platform")
+}

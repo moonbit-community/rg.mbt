@@ -564,3 +564,35 @@ done:
   free(argv);
   return result ? result : empty_bytes();
 }
+
+// out[0..2] = mtime (sec, nsec, ok), out[3..5] = atime, out[6..8] = btime.
+MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_file_times(moonbit_bytes_t path,
+                                                    int64_t *out) {
+  struct stat st;
+  if (stat((const char *)path, &st) != 0) {
+    set_err();
+    return -1;
+  }
+#if defined(__APPLE__)
+  out[0] = (int64_t)st.st_mtimespec.tv_sec;
+  out[1] = (int64_t)st.st_mtimespec.tv_nsec;
+  out[2] = 1;
+  out[3] = (int64_t)st.st_atimespec.tv_sec;
+  out[4] = (int64_t)st.st_atimespec.tv_nsec;
+  out[5] = 1;
+  out[6] = (int64_t)st.st_birthtimespec.tv_sec;
+  out[7] = (int64_t)st.st_birthtimespec.tv_nsec;
+  out[8] = 1;
+#else
+  out[0] = (int64_t)st.st_mtim.tv_sec;
+  out[1] = (int64_t)st.st_mtim.tv_nsec;
+  out[2] = 1;
+  out[3] = (int64_t)st.st_atim.tv_sec;
+  out[4] = (int64_t)st.st_atim.tv_nsec;
+  out[5] = 1;
+  out[6] = 0;
+  out[7] = 0;
+  out[8] = 0;
+#endif
+  return 0;
+}

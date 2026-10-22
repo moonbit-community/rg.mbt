@@ -57,9 +57,13 @@ pub fn parse_config_bytes(Bytes) -> (Array[String], Array[String])
 
 pub fn parse_into(Array[String], LowArgs) -> Unit raise RgError
 
+pub fn parse_low(Array[String]) -> ParseResult[LowArgs]
+
 pub fn parse_low_raw(Array[String]) -> LowArgs raise RgError
 
 pub let rg_version : String
+
+pub fn run_main(Array[String]) -> Int32
 
 pub fn set_errored() -> Unit
 
@@ -282,6 +286,12 @@ pub(all) enum Mode {
   Types
   Generate(GenerateMode)
 } derive(Eq, @debug.Debug)
+
+pub(all) enum ParseResult[T] {
+  Special(SpecialMode)
+  ParseOk(T)
+  ParseErr(String)
+}
 
 pub(all) enum PatternSource {
   Regexp(String)
