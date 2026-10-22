@@ -125,6 +125,13 @@ pub fn Metadata::is_dir(Self) -> Bool
 pub fn Metadata::is_file(Self) -> Bool
 pub fn Metadata::is_symlink(Self) -> Bool
 
+pub struct Process {
+  // private fields
+}
+pub fn Process::finish(Self) -> (Int32, Bytes) raise IOError
+pub fn Process::read(Self, FixedArray[Byte], Int32, Int32) -> Int32 raise IOError
+pub fn Process::spawn(String, Array[String], stdin_path? : String) -> Self raise IOError
+
 pub(all) struct ProcessOutput {
   status : Int32
   stdout : Bytes

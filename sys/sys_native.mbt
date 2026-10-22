@@ -126,15 +126,6 @@ extern "C" fn c_readlink(path : Bytes) -> Bytes = "moonbit_rgsys_readlink"
 extern "C" fn c_realpath(path : Bytes) -> Bytes = "moonbit_rgsys_realpath"
 
 ///|
-#borrow(prog, argblob, stdin_path)
-extern "C" fn c_run(
-  prog : Bytes,
-  argblob : Bytes,
-  nargs : Int32,
-  stdin_path : Bytes,
-) -> Bytes = "moonbit_rgsys_run"
-
-///|
 fn last_error() -> IOError {
   IOError::from_errno(c_last_err())
 }
@@ -427,21 +418,35 @@ pub fn read_link(path : String) -> String raise IOError {
 }
 
 ///|
-fn read_i32_le(b : Bytes, i : Int32) -> Int32 {
-  b[i].to_int() |
-  (b[i + 1].to_int() << 8) |
-  (b[i + 2].to_int() << 16) |
-  (b[i + 3].to_int() << 24)
-}
+#borrow(prog, argblob, stdin_path)
+extern "C" fn c_spawn(
+  prog : Bytes,
+  argblob : Bytes,
+  nargs : Int32,
+  stdin_path : Bytes,
+) -> Int32 = "moonbit_rgsys_spawn"
 
 ///|
-/// Runs `program` (looked up in `PATH`) with `args`, capturing its stdout
-/// and stderr. The child's stdin is the file at `stdin_path`, or `/dev/null`.
-pub fn run_command(
-  program : String,
-  args : Array[String],
-  stdin_path? : String,
-) -> ProcessOutput raise IOError {
+#borrow(buf)
+extern "C" fn c_proc_read(
+  h : Int32,
+  buf : FixedArray[Byte],
+  start : Int32,
+  len : Int32,
+) -> Int32 = "moonbit_rgsys_proc_read"
+
+///|
+extern "C" fn c_proc_close_stdout(h : Int32) = "moonbit_rgsys_proc_close_stdout"
+
+///|
+extern "C" fn c_proc_wait(h : Int32) -> Int32 = "moonbit_rgsys_proc_wait"
+
+///|
+extern "C" fn c_proc_finish(h : Int32) -> Bytes = "moonbit_rgsys_proc_finish"
+
+///|
+/// NUL-terminated arguments, concatenated, for passing to C.
+fn arg_blob(args : Array[String]) -> FixedArray[Byte] raise IOError {
   let parts = []
   for a in args {
     parts.push(cstr(a))
@@ -453,23 +458,67 @@ pub fn run_command(
     argblob.blit_from_bytes(off, p, 0, p.length())
     off += p.length()
   }
-  let stdin = cstr(stdin_path.unwrap_or("/dev/null"))
-  let r = c_run(
+  argblob
+}
+
+///|
+/// Spawns `program` (looked up in `PATH`) with `args`, with its stdout and
+/// stderr piped. The child's stdin is the file at `stdin_path`, or
+/// `/dev/null`.
+pub fn Process::spawn(
+  program : String,
+  args : Array[String],
+  stdin_path? : String,
+) -> Process raise IOError {
+  let argblob = arg_blob(args)
+  let h = c_spawn(
     cstr(program),
     argblob.unsafe_reinterpret_as_bytes(),
     args.length(),
-    stdin,
+    cstr(stdin_path.unwrap_or("/dev/null")),
   )
-  if r.length() < 8 {
+  if h < 0 {
     raise last_error()
   }
-  let status = read_i32_le(r, 0)
-  let out_len = read_i32_le(r, 4)
-  {
-    status,
-    stdout: r[8:8 + out_len].to_owned(),
-    stderr: r[8 + out_len:].to_owned(),
+  { handle: h, finished: false, }
+}
+
+///|
+/// Reads the child's stdout into `buf[start:start+len]` (collecting its
+/// stderr meanwhile). Returns 0 at the end of the output.
+pub fn Process::read(
+  self : Process,
+  buf : FixedArray[Byte],
+  start : Int32,
+  len : Int32,
+) -> Int32 raise IOError {
+  if self.finished {
+    return 0
   }
+  check_range(buf.length(), start, len)
+  let n = c_proc_read(self.handle, buf, start, len)
+  if n < 0 {
+    raise last_error()
+  }
+  n
+}
+
+///|
+/// Closes the child's stdout, waits for it to exit and returns its exit
+/// status (128 + the signal number if it was killed) and its stderr.
+pub fn Process::finish(self : Process) -> (Int32, Bytes) raise IOError {
+  if self.finished {
+    return (0, b"")
+  }
+  self.finished = true
+  c_proc_close_stdout(self.handle)
+  let status = c_proc_wait(self.handle)
+  let err = if status < 0 { Some(last_error()) } else { None }
+  let stderr = c_proc_finish(self.handle)
+  if err is Some(e) {
+    raise e
+  }
+  (status, stderr)
 }
 
 ///|

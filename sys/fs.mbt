@@ -182,3 +182,26 @@ fn path_bytes(s : String) -> Bytes raise IOError {
   }
   @osstr.encode(s)
 }
+
+///|
+/// Runs `program` (looked up in `PATH`) with `args` to completion,
+/// capturing its stdout and stderr. The child's stdin is the file at
+/// `stdin_path`, or `/dev/null`.
+pub fn run_command(
+  program : String,
+  args : Array[String],
+  stdin_path? : String,
+) -> ProcessOutput raise IOError {
+  let child = Process::spawn(program, args, stdin_path?)
+  let out = Buffer()
+  let chunk = FixedArray::make(65536, b'\x00')
+  for ;; {
+    let n = child.read(chunk, 0, chunk.length())
+    if n == 0 {
+      break
+    }
+    out.write_bytes(chunk.unsafe_reinterpret_as_bytes()[0:n])
+  }
+  let (status, stderr) = child.finish()
+  { status, stdout: out.to_bytes(), stderr, }
+}

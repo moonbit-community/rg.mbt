@@ -26,3 +26,20 @@ test "decompress gzip (native)" {
     content="hello gzip\nline two\n",
   )
 }
+
+///|
+test "CommandReader stops a command early without error" {
+  let can_spawn = try @sys.run_command("true", []) catch {
+    _ => false
+  } noraise {
+    _ => true
+  }
+  if !can_spawn {
+    return
+  }
+  let rdr = @cli.CommandReader::new("yes", ["foo"])
+  let buf = FixedArray::make(4, b'\x00')
+  assert_eq(rdr.read(buf, 0, 4), 4)
+  // Not read to the end and nothing on stderr: success, like ripgrep.
+  rdr.close()
+}

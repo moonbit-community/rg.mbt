@@ -94,3 +94,17 @@ test "native: run_command" {
   }
   @sys.remove_dir_all(dir)
 }
+
+///|
+test "native: Process streams output and can stop early" {
+  // `yes` never ends on its own: closing its stdout must make it exit (by
+  // SIGPIPE, which children get by default even though we ignore it).
+  let child = @sys.Process::spawn("yes", ["foo"])
+  let buf = FixedArray::make(8, b'\x00')
+  let n = child.read(buf, 0, 8)
+  assert_true(n > 0)
+  assert_eq(buf[0], b'f')
+  let (status, stderr) = child.finish()
+  assert_eq(status, 128 + 13)
+  assert_eq(stderr, b"")
+}

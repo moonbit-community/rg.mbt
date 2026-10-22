@@ -461,13 +461,6 @@ MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_readlink(moonbit_bytes_t path) 
 // ---------------------------------------------------------------------------
 // Processes.
 
-static void put_i32(uint8_t *p, int32_t v) {
-  uint32_t u = (uint32_t)v;
-  p[0] = u & 0xff;
-  p[1] = (u >> 8) & 0xff;
-  p[2] = (u >> 16) & 0xff;
-  p[3] = (u >> 24) & 0xff;
-}
 
 static int set_cloexec(int fd) {
   int flags = fcntl(fd, F_GETFD);
@@ -479,15 +472,45 @@ static int set_cloexec(int fd) {
 // `prog`). stdin comes from `stdin_path`. On success returns
 // [status:i32le][stdout_len:i32le][stdout][stderr]; on failure an empty
 // `Bytes` with `last_err` set.
-MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_run(moonbit_bytes_t prog,
-                                                     moonbit_bytes_t argblob,
-                                                     int32_t nargs,
-                                                     moonbit_bytes_t stdin_path) {
+// ---------------------------------------------------------------------------
+// Streaming child processes (like Rust's `Command` with piped stdout and
+// stderr). The child's stdout is read incrementally; its stderr is collected
+// whenever it is readable (so that the child never blocks on it) and fully
+// drained before waiting for the child.
+
+typedef struct {
+  int used;
+  pid_t pid;
+  int out_fd;
+  int err_fd;
+  buf_t err;
+} rgproc_t;
+
+#define RGPROC_MAX 64
+static rgproc_t rgprocs[RGPROC_MAX];
+
+// Spawns `prog` with the NUL-separated `argblob` arguments and `stdin_path`
+// as stdin. Returns a process handle, or -1 (with the error in last_err).
+MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_spawn(moonbit_bytes_t prog,
+                                               moonbit_bytes_t argblob,
+                                               int32_t nargs,
+                                               moonbit_bytes_t stdin_path) {
   last_err = 0;
+  int h = -1;
+  for (int i = 0; i < RGPROC_MAX; i++) {
+    if (!rgprocs[i].used) {
+      h = i;
+      break;
+    }
+  }
+  if (h < 0) {
+    last_err = 24; // EMFILE
+    return -1;
+  }
   char **argv = calloc((size_t)nargs + 2, sizeof(char *));
   if (!argv) {
     last_err = 12;
-    return empty_bytes();
+    return -1;
   }
   argv[0] = (char *)prog;
   char *p = (char *)argblob;
@@ -497,11 +520,13 @@ MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_run(moonbit_bytes_t prog,
   }
   argv[nargs + 1] = NULL;
 
+  int ok = 0;
   int in_fd = -1, out_p[2] = {-1, -1}, err_p[2] = {-1, -1};
-  buf_t out = {0}, err = {0};
-  moonbit_bytes_t result = NULL;
   posix_spawn_file_actions_t fa;
   int fa_init = 0;
+  posix_spawnattr_t attr;
+  int attr_init = 0;
+  pid_t pid;
 
   in_fd = open((const char *)stdin_path, O_RDONLY | O_CLOEXEC);
   if (in_fd < 0) {
@@ -516,7 +541,6 @@ MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_run(moonbit_bytes_t prog,
   set_cloexec(out_p[1]);
   set_cloexec(err_p[0]);
   set_cloexec(err_p[1]);
-
   if (posix_spawn_file_actions_init(&fa) != 0) {
     last_err = 12;
     goto done;
@@ -525,104 +549,134 @@ MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_run(moonbit_bytes_t prog,
   posix_spawn_file_actions_adddup2(&fa, in_fd, 0);
   posix_spawn_file_actions_adddup2(&fa, out_p[1], 1);
   posix_spawn_file_actions_adddup2(&fa, err_p[1], 2);
-
-  // Like Rust's std, restore the default SIGPIPE disposition in children
-  // (the parent ignores it, see `moonbit_rgsys_ignore_sigpipe`).
-  posix_spawnattr_t attr;
+  // Like Rust's std, children get the default SIGPIPE disposition.
   posix_spawnattr_init(&attr);
+  attr_init = 1;
   sigset_t defaults;
   sigemptyset(&defaults);
   sigaddset(&defaults, SIGPIPE);
   posix_spawnattr_setsigdefault(&attr, &defaults);
   posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETSIGDEF);
-
-  pid_t pid;
-  int rc = posix_spawnp(&pid, (const char *)prog, &fa, &attr, argv, RGSYS_ENVIRON);
-  posix_spawnattr_destroy(&attr);
+  int rc = posix_spawnp(&pid, (const char *)prog, &fa, &attr, argv,
+                        RGSYS_ENVIRON);
   if (rc != 0) {
     last_err = linux_errno(rc);
     goto done;
   }
-  close(out_p[1]);
-  out_p[1] = -1;
-  close(err_p[1]);
-  err_p[1] = -1;
-  close(in_fd);
-  in_fd = -1;
-
-  struct pollfd fds[2];
-  int open_count = 2;
-  int fd_of[2] = {out_p[0], err_p[0]};
-  buf_t *dst[2] = {&out, &err};
-  char chunk[65536];
-  while (open_count > 0) {
-    int n = 0;
-    int idx[2];
-    for (int i = 0; i < 2; i++) {
-      if (fd_of[i] >= 0) {
-        fds[n].fd = fd_of[i];
-        fds[n].events = POLLIN;
-        fds[n].revents = 0;
-        idx[n] = i;
-        n++;
-      }
-    }
-    int pr = poll(fds, (nfds_t)n, -1);
-    if (pr < 0) {
-      if (errno == EINTR) continue;
-      break;
-    }
-    for (int j = 0; j < n; j++) {
-      if (!fds[j].revents) continue;
-      int i = idx[j];
-      ssize_t r = read(fd_of[i], chunk, sizeof chunk);
-      if (r < 0 && errno == EINTR) continue;
-      if (r <= 0) {
-        close(fd_of[i]);
-        fd_of[i] = -1;
-        open_count--;
-      } else {
-        buf_push(dst[i], chunk, (size_t)r);
-      }
-    }
-  }
-  for (int i = 0; i < 2; i++)
-    if (fd_of[i] >= 0) close(fd_of[i]);
-  out_p[0] = err_p[0] = -1;
-
-  int status = 0;
-  while (waitpid(pid, &status, 0) < 0) {
-    if (errno != EINTR) {
-      set_err();
-      goto done;
-    }
-  }
-  int code;
-  if (WIFEXITED(status))
-    code = WEXITSTATUS(status);
-  else if (WIFSIGNALED(status))
-    code = 128 + WTERMSIG(status);
-  else
-    code = -1;
-
-  result = moonbit_make_bytes((int32_t)(8 + out.len + err.len), 0);
-  put_i32(result, code);
-  put_i32(result + 4, (int32_t)out.len);
-  if (out.len) memcpy(result + 8, out.data, out.len);
-  if (err.len) memcpy(result + 8 + out.len, err.data, err.len);
+  ok = 1;
 
 done:
   if (fa_init) posix_spawn_file_actions_destroy(&fa);
+  if (attr_init) posix_spawnattr_destroy(&attr);
   if (in_fd >= 0) close(in_fd);
-  if (out_p[0] >= 0) close(out_p[0]);
   if (out_p[1] >= 0) close(out_p[1]);
-  if (err_p[0] >= 0) close(err_p[0]);
   if (err_p[1] >= 0) close(err_p[1]);
-  free(out.data);
-  free(err.data);
   free(argv);
-  return result ? result : empty_bytes();
+  if (!ok) {
+    if (out_p[0] >= 0) close(out_p[0]);
+    if (err_p[0] >= 0) close(err_p[0]);
+    return -1;
+  }
+  rgproc_t *pr = &rgprocs[h];
+  pr->used = 1;
+  pr->pid = pid;
+  pr->out_fd = out_p[0];
+  pr->err_fd = err_p[0];
+  pr->err.data = NULL;
+  pr->err.len = 0;
+  pr->err.cap = 0;
+  return h;
 }
+
+// Reads whatever is available on the child's stderr.
+static void rgproc_read_err(rgproc_t *pr) {
+  char chunk[4096];
+  ssize_t r = read(pr->err_fd, chunk, sizeof chunk);
+  if (r < 0 && errno == EINTR) return;
+  if (r <= 0) {
+    close(pr->err_fd);
+    pr->err_fd = -1;
+  } else {
+    buf_push(&pr->err, chunk, (size_t)r);
+  }
+}
+
+// Reads up to `len` bytes of the child's stdout into `buf + start`, while
+// collecting its stderr. Returns 0 at EOF, or -1 on error.
+MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_proc_read(int32_t h, uint8_t *buf,
+                                                   int32_t start, int32_t len) {
+  last_err = 0;
+  rgproc_t *pr = &rgprocs[h];
+  if (pr->out_fd < 0) return 0;
+  for (;;) {
+    struct pollfd fds[2];
+    int n = 0;
+    fds[n].fd = pr->out_fd;
+    fds[n].events = POLLIN;
+    fds[n].revents = 0;
+    n++;
+    if (pr->err_fd >= 0) {
+      fds[n].fd = pr->err_fd;
+      fds[n].events = POLLIN;
+      fds[n].revents = 0;
+      n++;
+    }
+    if (poll(fds, (nfds_t)n, -1) < 0) {
+      if (errno == EINTR) continue;
+      set_err();
+      return -1;
+    }
+    if (n == 2 && fds[1].revents) rgproc_read_err(pr);
+    if (fds[0].revents) {
+      ssize_t r = read(pr->out_fd, buf + start, (size_t)len);
+      if (r < 0) {
+        if (errno == EINTR) continue;
+        set_err();
+        return -1;
+      }
+      return (int32_t)r;
+    }
+  }
+}
+
+// Closes the child's stdout (a well-behaved child then exits).
+MOONBIT_FFI_EXPORT void moonbit_rgsys_proc_close_stdout(int32_t h) {
+  rgproc_t *pr = &rgprocs[h];
+  if (pr->out_fd >= 0) {
+    close(pr->out_fd);
+    pr->out_fd = -1;
+  }
+}
+
+// Drains the child's stderr, waits for it to exit and returns its exit code
+// (128 + the signal number if it was killed by a signal), or -1 on error.
+MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_proc_wait(int32_t h) {
+  last_err = 0;
+  rgproc_t *pr = &rgprocs[h];
+  while (pr->err_fd >= 0) rgproc_read_err(pr);
+  int status = 0;
+  while (waitpid(pr->pid, &status, 0) < 0) {
+    if (errno != EINTR) {
+      set_err();
+      return -1;
+    }
+  }
+  if (WIFEXITED(status)) return WEXITSTATUS(status);
+  if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
+  return -1;
+}
+
+// Returns the collected stderr of the child and releases its handle.
+MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_proc_finish(int32_t h) {
+  rgproc_t *pr = &rgprocs[h];
+  moonbit_bytes_t r = make_bytes(pr->err.data ? pr->err.data : "", pr->err.len);
+  free(pr->err.data);
+  if (pr->out_fd >= 0) close(pr->out_fd);
+  if (pr->err_fd >= 0) close(pr->err_fd);
+  memset(pr, 0, sizeof *pr);
+  return r;
+}
+
 
 // out[0..2] = mtime (sec, nsec, ok), out[3..5] = atime, out[6..8] = btime.
 MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_file_times(moonbit_bytes_t path,

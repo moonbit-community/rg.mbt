@@ -32,11 +32,11 @@ pub impl Show for CommandError with fn output(self, logger) {
 }
 
 ///|
-/// Reads the stdout of a command. Since this platform layer can't stream
-/// process output, the command is run to completion first.
+/// Reads the stdout of a command as it runs (like grep-cli's
+/// `CommandReader`): stopping early closes the command's stdout, which
+/// makes a well-behaved command exit.
 pub struct CommandReader {
-  priv output : @sys.ProcessOutput
-  priv mut pos : Int32
+  priv child : @sys.Process
   priv mut eof : Bool
   priv mut closed : Bool
 }
@@ -48,10 +48,10 @@ pub fn CommandReader::new(
   args : Array[String],
   stdin_path? : String,
 ) -> CommandReader raise CommandError {
-  let output = @sys.run_command(program, args, stdin_path?) catch {
+  let child = @sys.Process::spawn(program, args, stdin_path?) catch {
     e => raise CommandIo(e)
   }
-  { output, pos: 0, eof: false, closed: false, }
+  { child, eof: false, closed: false, }
 }
 
 ///|
@@ -66,33 +66,32 @@ pub fn CommandReader::read(
   if self.closed {
     return 0
   }
-  let out = self.output.stdout
-  let avail = out.length() - self.pos
-  if avail <= 0 {
+  let n = self.child.read(buf, start, len) catch { e => raise CommandIo(e) }
+  if n == 0 {
     self.eof = true
     self.close()
-    return 0
   }
-  let n = if avail < len { avail } else { len }
-  buf.blit_from_bytes(start, out, self.pos, n)
-  self.pos += n
   n
 }
 
 ///|
-/// Closes the reader, raising an error if the command failed.
+/// Closes the command's stdout and waits for it to exit, raising an error
+/// if it failed. Like ripgrep, a failure without any stderr output is
+/// ignored if the output wasn't read to the end (the command was most likely
+/// killed by the closed pipe).
 pub fn CommandReader::close(self : CommandReader) -> Unit raise CommandError {
   if self.closed {
     return
   }
   self.closed = true
-  if self.output.status == 0 {
+  let (status, stderr) = self.child.finish() catch { e => raise CommandIo(e) }
+  if status == 0 {
     return
   }
-  if !self.eof && self.output.stderr.length() == 0 {
+  if !self.eof && stderr.length() == 0 {
     return
   }
-  raise CommandStderr(self.output.stderr)
+  raise CommandStderr(stderr)
 }
 
 ///|
@@ -100,9 +99,14 @@ pub fn CommandReader::close(self : CommandReader) -> Unit raise CommandError {
 pub fn CommandReader::read_to_end(
   self : CommandReader,
 ) -> Bytes raise CommandError {
-  let out = self.output.stdout[self.pos:].to_owned()
-  self.pos = self.output.stdout.length()
-  self.eof = true
-  self.close()
-  out
+  let out = Buffer()
+  let chunk = FixedArray::make(65536, b'\x00')
+  for ;; {
+    let n = self.read(chunk, 0, chunk.length())
+    if n == 0 {
+      break
+    }
+    out.write_bytes(chunk.unsafe_reinterpret_as_bytes()[0:n])
+  }
+  out.to_bytes()
 }

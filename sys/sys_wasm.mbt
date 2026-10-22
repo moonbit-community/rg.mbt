@@ -971,14 +971,43 @@ pub fn read_dir(path : String) -> Array[DirEntry] raise IOError {
 
 ///|
 /// Unsupported on wasm.
-pub fn run_command(
+pub fn Process::spawn(
   program : String,
   args : Array[String],
   stdin_path? : String,
-) -> ProcessOutput raise IOError {
+) -> Process raise IOError {
   ignore(program)
   ignore(args)
   ignore(stdin_path)
+  // The type is shared with the native backend; on wasm no process can
+  // exist, so this value is never returned.
+  let unusable : Process = { handle: -1, finished: true, }
+  ignore(unusable)
+  raise unsupported()
+}
+
+///|
+/// Unsupported on wasm (processes can't be spawned).
+pub fn Process::read(
+  self : Process,
+  buf : FixedArray[Byte],
+  start : Int32,
+  len : Int32,
+) -> Int32 raise IOError {
+  ignore(self.handle)
+  ignore(buf)
+  ignore(start)
+  ignore(len)
+  if self.finished {
+    return 0
+  }
+  raise unsupported()
+}
+
+///|
+/// Unsupported on wasm (processes can't be spawned).
+pub fn Process::finish(self : Process) -> (Int32, Bytes) raise IOError {
+  self.finished = true
   raise unsupported()
 }
 

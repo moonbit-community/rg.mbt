@@ -48,6 +48,14 @@ pub(all) struct DirEntry {
 } derive(Eq, Debug)
 
 ///|
+/// A running child process with piped stdout and stderr (see
+/// `Process::spawn`).
+pub struct Process {
+  priv handle : Int32
+  priv mut finished : Bool
+}
+
+///|
 /// The result of `run_command`.
 pub(all) struct ProcessOutput {
   status : Int32
