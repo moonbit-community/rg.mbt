@@ -362,6 +362,7 @@ pub fn Standard::sink(
     binary_byte_offset: None,
     stats,
     needs_match_granularity,
+    cache: None,
   }
 }
 
@@ -393,6 +394,7 @@ pub fn Standard::sink_with_path(
     binary_byte_offset: None,
     stats,
     needs_match_granularity,
+    cache: None,
   }
 }
 
@@ -443,6 +445,8 @@ pub struct StandardSink {
   priv mut binary_byte_offset : Int64?
   priv stats : Stats?
   priv needs_match_granularity : Bool
+  /// The implementation object, reused for every line printed.
+  priv mut cache : StandardImpl?
 }
 
 ///|
@@ -631,19 +635,41 @@ pub impl @searcher.Sink for StandardSink with fn finish(self, searcher, finish) 
 /// together the searcher, the sink implementation and information about
 /// the match.
 priv struct StandardImpl {
-  searcher : @searcher.Searcher
+  mut searcher : @searcher.Searcher
   sink : StandardSink
   sunk : Sunk
   /// Set to true if and only if we are writing a match with color.
   mut in_color_match : Bool
+  /// The prelude writer, reused for every line.
+  mut prelude : PreludeWriter?
 }
 
 ///|
+/// Returns the sink's (reused) implementation object, reset for a new line
+/// with an empty `Sunk`.
 fn StandardImpl::new(
   searcher : @searcher.Searcher,
   sink : StandardSink,
 ) -> StandardImpl {
-  { searcher, sink, sunk: Sunk::empty(), in_color_match: false, }
+  match sink.cache {
+    Some(imp) => {
+      imp.searcher = searcher
+      imp.in_color_match = false
+      imp.sunk.set_empty()
+      imp
+    }
+    None => {
+      let imp = {
+        searcher,
+        sink,
+        sunk: Sunk::empty(),
+        in_color_match: false,
+        prelude: None,
+      }
+      sink.cache = Some(imp)
+      imp
+    }
+  }
 }
 
 ///|
@@ -652,12 +678,9 @@ fn StandardImpl::from_match(
   sink : StandardSink,
   mat : @searcher.SinkMatch,
 ) -> StandardImpl {
-  let sunk = Sunk::from_sink_match(
-    mat,
-    sink.standard.matches,
-    sink.replacer.replacement(),
-  )
-  { searcher, sink, sunk, in_color_match: false, }
+  let imp = StandardImpl::new(searcher, sink)
+  imp.sunk.set_match(mat, sink.standard.matches, sink.replacer.replacement())
+  imp
 }
 
 ///|
@@ -666,12 +689,9 @@ fn StandardImpl::from_context(
   sink : StandardSink,
   ctx : @searcher.SinkContext,
 ) -> StandardImpl {
-  let sunk = Sunk::from_sink_context(
-    ctx,
-    sink.standard.matches,
-    sink.replacer.replacement(),
-  )
-  { searcher, sink, sunk, in_color_match: false, }
+  let imp = StandardImpl::new(searcher, sink)
+  imp.sunk.set_context(ctx, sink.standard.matches, sink.replacer.replacement())
+  imp
 }
 
 ///|
@@ -1386,17 +1406,30 @@ priv enum PreludeSeparator {
 priv struct PreludeWriter {
   std : StandardImpl
   mut next_separator : PreludeSeparator
-  field_separator : Bytes
+  mut field_separator : Bytes
   mut interp_status : Bool
 }
 
 ///|
+/// Returns the (reused) prelude writer of `std`, reset for a new line.
 fn PreludeWriter::new(std : StandardImpl) -> PreludeWriter {
-  {
-    std,
-    next_separator: NoSeparator,
-    field_separator: std.separator_field(),
-    interp_status: false,
+  match std.prelude {
+    Some(p) => {
+      p.next_separator = NoSeparator
+      p.field_separator = std.separator_field()
+      p.interp_status = false
+      p
+    }
+    None => {
+      let p = {
+        std,
+        next_separator: NoSeparator,
+        field_separator: std.separator_field(),
+        interp_status: false,
+      }
+      std.prelude = Some(p)
+      p
+    }
   }
 }
 

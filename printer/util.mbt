@@ -144,14 +144,14 @@ fn Replacer::allocate(self : Replacer, matcher : &@matcher.Matcher) -> Space {
 /// reported by the searcher. The bytes are `buf[start:end]` and all match
 /// offsets are relative to `start`.
 priv struct Sunk {
-  buf : FixedArray[Byte]
-  start : Int32
-  end : Int32
-  absolute_byte_offset : Int64
-  line_number : Int64?
-  context_kind : @searcher.SinkContextKind?
-  matches : Array[@matcher.Match]
-  original_matches : Array[@matcher.Match]
+  mut buf : FixedArray[Byte]
+  mut start : Int32
+  mut end : Int32
+  mut absolute_byte_offset : Int64
+  mut line_number : Int64?
+  mut context_kind : @searcher.SinkContextKind?
+  mut matches : Array[@matcher.Match]
+  mut original_matches : Array[@matcher.Match]
 }
 
 ///|
@@ -216,6 +216,75 @@ fn Sunk::from_sink_context(
     matches,
     original_matches,
   }
+}
+
+///|
+/// Resets `self` to the empty state (see `Sunk::empty`).
+fn Sunk::set_empty(self : Sunk) -> Unit {
+  self.buf = []
+  self.start = 0
+  self.end = 0
+  self.absolute_byte_offset = 0
+  self.line_number = None
+  self.context_kind = None
+  self.matches = []
+  self.original_matches = []
+}
+
+///|
+/// Sets `self` to `Sunk::from_sink_match(...)` without allocating.
+fn Sunk::set_match(
+  self : Sunk,
+  sunk : @searcher.SinkMatch,
+  original_matches : Array[@matcher.Match],
+  replacement : (@termcolor.ByteVec, Array[@matcher.Match])?,
+) -> Unit {
+  match replacement {
+    Some((dst, ms)) => {
+      self.buf = dst.storage()
+      self.start = 0
+      self.end = dst.length()
+      self.matches = ms
+    }
+    None => {
+      self.buf = sunk.buf
+      self.start = sunk.buf_start + sunk.start
+      self.end = sunk.buf_start + sunk.end
+      self.matches = original_matches
+    }
+  }
+  self.absolute_byte_offset = sunk.absolute_byte_offset
+  self.line_number = sunk.line_number
+  self.context_kind = None
+  self.original_matches = original_matches
+}
+
+///|
+/// Sets `self` to `Sunk::from_sink_context(...)` without allocating.
+fn Sunk::set_context(
+  self : Sunk,
+  sunk : @searcher.SinkContext,
+  original_matches : Array[@matcher.Match],
+  replacement : (@termcolor.ByteVec, Array[@matcher.Match])?,
+) -> Unit {
+  match replacement {
+    Some((dst, ms)) => {
+      self.buf = dst.storage()
+      self.start = 0
+      self.end = dst.length()
+      self.matches = ms
+    }
+    None => {
+      self.buf = sunk.buf
+      self.start = sunk.start
+      self.end = sunk.end
+      self.matches = original_matches
+    }
+  }
+  self.absolute_byte_offset = sunk.absolute_byte_offset
+  self.line_number = sunk.line_number
+  self.context_kind = Some(sunk.kind)
+  self.original_matches = original_matches
 }
 
 ///|
