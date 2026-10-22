@@ -29,13 +29,20 @@ case "$target" in
   wasm)
     moon build --release --target wasm cmd/rg >/dev/null
     export CARGO_BIN_EXE_rg="$root/_build/wasm/release/build/cmd/rg/rg.wasm"
-    runner="$tdir/wasmtime-runner.sh"
-    cat > "$runner" <<'EOS'
+    # The test harness runs the binary through `qemu-<arch>` whenever
+    # CROSS_RUNNER is set (see cross_runner in tests/util.rs), so provide a
+    # shim with that name that runs the module under wasmtime instead.
+    bindir="$tdir/wasm-runner-bin"
+    mkdir -p "$bindir"
+    arch=$(uname -m)
+    [ "$arch" = arm64 ] && arch=aarch64
+    cat > "$bindir/qemu-$arch" <<'EOS'
 #!/bin/sh
 exec wasmtime run -S inherit-env=y --dir . --dir /::/ "$@"
 EOS
-    chmod +x "$runner"
-    export CROSS_RUNNER="$runner"
+    chmod +x "$bindir/qemu-$arch"
+    export PATH="$bindir:$PATH"
+    export CROSS_RUNNER=wasmtime
     ;;
   *)
     echo "unknown target: $target" >&2
