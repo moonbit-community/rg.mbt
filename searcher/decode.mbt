@@ -1,10 +1,39 @@
 ///|
+/// The decoder family of an encoding.
 priv enum EncKind {
   Utf8
   Utf16LE
   Utf16BE
-  Windows1252
+  /// A single-byte encoding, indexing `single_byte_names`.
+  SingleByte(Int32)
+  Gbk
+  Gb18030
+  Big5
+  EucJp
+  Iso2022Jp
+  ShiftJis
+  EucKr
+  XUserDefined
 } derive(Eq)
+
+///|
+/// The canonical WHATWG name of the encoding.
+fn EncKind::name(self : EncKind) -> String {
+  match self {
+    Utf8 => "UTF-8"
+    Utf16LE => "UTF-16LE"
+    Utf16BE => "UTF-16BE"
+    SingleByte(i) => single_byte_names[i]
+    Gbk => "GBK"
+    Gb18030 => "gb18030"
+    Big5 => "Big5"
+    EucJp => "EUC-JP"
+    Iso2022Jp => "ISO-2022-JP"
+    ShiftJis => "Shift_JIS"
+    EucKr => "EUC-KR"
+    XUserDefined => "x-user-defined"
+  }
+}
 
 ///|
 /// A character encoding used to transcode input to UTF-8 before searching.
@@ -14,66 +43,53 @@ pub struct Encoding {
 }
 
 ///|
-/// Looks up an encoding by its WHATWG label (case-insensitive). Only a
-/// subset of encodings is supported: UTF-8, UTF-16LE, UTF-16BE and
-/// windows-1252 (latin1).
-pub fn Encoding::new(label : String) -> Encoding raise SearchError {
-  let l = label.trim().to_lower().to_string()
-  let kind = match l {
-    "unicode-1-1-utf-8"
-    | "unicode11utf8"
-    | "unicode20utf8"
-    | "utf-8"
-    | "utf8"
-    | "x-unicode20utf8" => Utf8
-    "csunicode"
-    | "iso-10646-ucs-2"
-    | "ucs-2"
-    | "unicode"
-    | "unicodefeff"
-    | "utf-16"
-    | "utf-16le" => Utf16LE
-    "unicodefffe" | "utf-16be" => Utf16BE
-    "ansi_x3.4-1968"
-    | "ascii"
-    | "cp1252"
-    | "cp819"
-    | "csisolatin1"
-    | "ibm819"
-    | "iso-8859-1"
-    | "iso-ir-100"
-    | "iso8859-1"
-    | "iso88591"
-    | "iso_8859-1"
-    | "iso_8859-1:1987"
-    | "l1"
-    | "latin1"
-    | "us-ascii"
-    | "windows-1252"
-    | "x-cp1252" => Windows1252
-    _ => raise ConfigError("grep config error: unknown encoding: \{label}")
-  }
-  let name = match kind {
-    Utf8 => "UTF-8"
-    Utf16LE => "UTF-16LE"
-    Utf16BE => "UTF-16BE"
-    Windows1252 => "windows-1252"
-  }
-  { kind, name, }
+fn is_ascii_whitespace(c : UInt16) -> Bool {
+  c is ('\t' | '\n' | '\u{0C}' | '\r' | ' ')
 }
 
 ///|
+/// Implements the Encoding Standard's "get an encoding" for `label`: leading
+/// and trailing ASCII whitespace is removed and the label is matched ASCII
+/// case-insensitively.
+fn lookup_label(label : String) -> EncKind? {
+  let mut start = 0
+  let mut end = label.length()
+  while start < end && is_ascii_whitespace(label[start]) {
+    start += 1
+  }
+  while end > start && is_ascii_whitespace(label[end - 1]) {
+    end -= 1
+  }
+  let sb = StringBuilder()
+  for i in start..<end {
+    let c = label[i].to_int()
+    if c >= 0x80 {
+      // All labels are ASCII.
+      return None
+    }
+    let c = if c >= 'A'.to_int() && c <= 'Z'.to_int() { c + 0x20 } else { c }
+    sb.write_char(c.unsafe_to_char())
+  }
+  encoding_kind_for_label(sb.to_string())
+}
+
+///|
+/// Looks up an encoding by its WHATWG label, like encoding_rs's
+/// `Encoding::for_label_no_replacement`: every label of the Encoding Standard
+/// is accepted (ASCII case-insensitively, ignoring surrounding ASCII
+/// whitespace) except those of the "replacement" encoding.
+pub fn Encoding::new(label : String) -> Encoding raise SearchError {
+  guard lookup_label(label) is Some(kind) else {
+    raise ConfigError("grep config error: unknown encoding: \{label}")
+  }
+  { kind, name: kind.name(), }
+}
+
+///|
+/// Returns the canonical WHATWG name of the encoding, e.g. `Shift_JIS`.
 pub fn Encoding::name(self : Encoding) -> String {
   self.name
 }
-
-///|
-let windows1252_high : FixedArray[Int32] = [
-  0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, 0x02C6, 0x2030,
-  0x0160, 0x2039, 0x0152, 0x008D, 0x017D, 0x008F, 0x0090, 0x2018, 0x2019, 0x201C,
-  0x201D, 0x2022, 0x2013, 0x2014, 0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D,
-  0x017E, 0x0178,
-]
 
 ///|
 /// Returns the encoding indicated by a byte order mark at the start of
@@ -121,6 +137,10 @@ priv struct DecodeReader {
   mut raw_start : Int32
   mut raw_end : Int32
   mut eof : Bool
+  // State of the legacy decoder, if `mode` needs one.
+  mut legacy : LegacyDecoder?
+  // Whether the end of the input has been fully decoded.
+  mut flushed : Bool
   // Decoded output waiting to be returned.
   out : Buffer
   mut out_pos : Int32
@@ -143,6 +163,8 @@ fn DecodeReader::new(
     raw_start: 0,
     raw_end: 0,
     eof: false,
+    legacy: None,
+    flushed: false,
     out: Buffer(),
     out_pos: 0,
     out_bytes: b"",
@@ -194,6 +216,10 @@ fn DecodeReader::start(self : DecodeReader) -> Unit raise {
     }
   }
   self.mode = self.encoding
+  match self.encoding {
+    None | Some(Utf8 | Utf16LE | Utf16BE) => ()
+    Some(kind) => self.legacy = Some(LegacyDecoder::new(kind))
+  }
 }
 
 ///|
@@ -221,16 +247,25 @@ fn DecodeReader::decode_some(self : DecodeReader, kind : EncKind) -> Unit {
   let out = self.out
   match kind {
     Utf8 => ()
-    Windows1252 => {
-      for i in self.raw_start..<self.raw_end {
-        let b = self.raw[i].to_int()
-        if b >= 0x80 && b < 0xA0 {
-          push_char(out, windows1252_high[b - 0x80])
-        } else {
-          push_char(out, b)
+    SingleByte(_)
+    | Gbk
+    | Gb18030
+    | Big5
+    | EucJp
+    | Iso2022Jp
+    | ShiftJis
+    | EucKr
+    | XUserDefined => {
+      if self.legacy is Some(dec) {
+        dec.feed(self.raw, self.raw_start, self.raw_end, out)
+        if self.eof {
+          dec.finish(out)
         }
       }
       self.raw_start = self.raw_end
+      if self.eof {
+        self.flushed = true
+      }
     }
     Utf16LE | Utf16BE => {
       let le = kind == Utf16LE
@@ -274,6 +309,9 @@ fn DecodeReader::decode_some(self : DecodeReader, kind : EncKind) -> Unit {
         i = self.raw_end
       }
       self.raw_start = i
+      if self.eof {
+        self.flushed = true
+      }
     }
   }
 }
@@ -308,7 +346,7 @@ impl Reader for DecodeReader with fn read(self, buf, start, len) {
     }
     Some(kind) => {
       while self.out_pos >= self.out_bytes.length() {
-        if self.eof && self.raw_start >= self.raw_end {
+        if self.flushed {
           return 0
         }
         self.fill_raw()
