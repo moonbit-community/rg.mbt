@@ -122,3 +122,25 @@ test "missing_crlf" {
   assert_eq(rust_lines(got).length(), 3)
   assert_true(rust_lines(got)[1].contains("test\\r\\n"))
 }
+
+///|
+test "non_utf8_path" {
+  // A file name that isn't valid UTF-8 (as decoded by `sys`) is written as
+  // base64 bytes, like ripgrep's `json::notutf8` test expects.
+  let matcher = @grep_regex.RegexMatcher::new("Watson")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().build(out)
+  let path = @osstr.decode(b"foo\xFFbar")
+  @searcher.SearcherBuilder::new()
+  .build()
+  .search_reader(
+    matcher,
+    reader(json_sherlock),
+    printer.sink_with_path(matcher, path),
+  )
+  let lines = rust_lines(contents(out))
+  assert_eq(
+    lines[0],
+    "{\"type\":\"begin\",\"data\":{\"path\":{\"bytes\":\"Zm9v/2Jhcg==\"}}}",
+  )
+}

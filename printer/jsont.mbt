@@ -112,6 +112,11 @@ fn Message::write_json(self : Message, w : JsonWriter) -> Unit {
 fn write_path_field(w : JsonWriter, path : String?) -> Unit {
   w.key("path")
   match path {
+    // A path that isn't valid UTF-8 is written as `{"bytes": ...}`.
+    Some(p) if @osstr.has_escapes(p) => {
+      let b = @osstr.encode(p).to_fixedarray()
+      write_data(w, b, 0, b.length())
+    }
     Some(p) => {
       w.begin_object()
       w.key("text")

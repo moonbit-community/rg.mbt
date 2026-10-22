@@ -26,6 +26,9 @@ extern "C" fn c_gethostname() -> Bytes = "moonbit_rgsys_gethostname"
 extern "C" fn c_now_nanos() -> Int64 = "moonbit_rgsys_now_nanos"
 
 ///|
+extern "C" fn c_is_macos() -> Int32 = "moonbit_rgsys_is_macos"
+
+///|
 #borrow(buf)
 extern "C" fn c_write_all(
   fd : Int32,
@@ -117,7 +120,8 @@ fn cstr(s : String) -> Bytes raise IOError {
 
 ///|
 fn decode(b : BytesView) -> String {
-  @utf8.decode_lossy(b)
+  // Lossless: invalid UTF-8 (e.g. in file names) is escaped (see `osstr`).
+  @osstr.decode(b)
 }
 
 ///|
@@ -205,6 +209,13 @@ pub fn hostname() -> String? {
 ///|
 pub fn is_windows() -> Bool {
   false
+}
+
+///|
+/// Whether ripgrep would search files through memory maps on this platform
+/// when asked to (it never does on macOS, where they are slow).
+pub fn mmap_supported() -> Bool {
+  c_is_macos() == 0
 }
 
 ///|

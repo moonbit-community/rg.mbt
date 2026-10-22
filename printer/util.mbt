@@ -307,16 +307,15 @@ fn Sunk::len(self : Sunk) -> Int32 {
 priv struct PrinterPath {
   /// The path as a string (after separator replacement).
   path : String
-  /// The UTF-8 bytes that are printed.
+  /// The bytes that are printed (the OS form of the path, see `osstr`).
   bytes : Bytes
   mut hyperlink : HyperlinkPath??
 }
 
 ///|
 fn PrinterPath::new(path : String) -> PrinterPath {
-  let v = @termcolor.ByteVec::new(capacity=path.length() + 1)
-  v.extend_string(path)
-  { path, bytes: v.to_bytes(), hyperlink: None, }
+  // Paths are OS strings: restore any bytes that aren't valid UTF-8.
+  { path, bytes: @osstr.encode(path), hyperlink: None, }
 }
 
 ///|

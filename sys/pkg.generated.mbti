@@ -30,6 +30,8 @@ pub fn is_windows() -> Bool
 
 pub fn metadata(String) -> Metadata raise IOError
 
+pub fn mmap_supported() -> Bool
+
 pub fn now_nanos() -> Int64
 
 pub fn path_exists(String) -> Bool

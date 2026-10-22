@@ -196,7 +196,8 @@ fn unsupported() -> IOError {
 
 ///|
 fn decode(b : BytesView) -> String {
-  @utf8.decode_lossy(b)
+  // Lossless: invalid UTF-8 (e.g. in file names) is escaped (see `osstr`).
+  @osstr.decode(b)
 }
 
 // ---------------------------------------------------------------------------
@@ -314,6 +315,13 @@ pub fn hostname() -> String? {
 
 ///|
 pub fn is_windows() -> Bool {
+  false
+}
+
+///|
+/// Whether ripgrep would search files through memory maps on this platform.
+/// Always `false` on wasm (WASI has no memory maps).
+pub fn mmap_supported() -> Bool {
   false
 }
 
@@ -857,7 +865,7 @@ pub fn symlink_metadata(path : String) -> Metadata raise IOError {
     Ok(target) =>
       {
         file_type: Symlink,
-        len: @utf8.encode(target).length().to_int64(),
+        len: @osstr.encode(target).length().to_int64(),
         dev: 0,
         ino: 0,
       }

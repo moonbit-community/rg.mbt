@@ -140,6 +140,14 @@ static int buf_push(buf_t *b, const void *data, size_t len) {
 
 MOONBIT_FFI_EXPORT void moonbit_rgsys_exit(int32_t code) { exit(code); }
 
+MOONBIT_FFI_EXPORT int32_t moonbit_rgsys_is_macos(void) {
+#if defined(__APPLE__)
+  return 1;
+#else
+  return 0;
+#endif
+}
+
 // Returns [1] ++ value if set, or [] if unset.
 MOONBIT_FFI_EXPORT moonbit_bytes_t moonbit_rgsys_getenv(moonbit_bytes_t name) {
   const char *v = getenv((const char *)name);

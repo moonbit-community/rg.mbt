@@ -168,8 +168,9 @@ fn check_range(
 }
 
 ///|
-/// Encodes `s` as UTF-8, rejecting interior NUL characters (like Rust does
-/// for paths passed to the OS).
+/// Encodes `s` for the OS (as UTF-8, restoring bytes escaped by `osstr`),
+/// rejecting interior NUL characters (like Rust does for paths passed to the
+/// OS).
 fn path_bytes(s : String) -> Bytes raise IOError {
   for c in s {
     if c == '\u{0}' {
@@ -179,5 +180,5 @@ fn path_bytes(s : String) -> Bytes raise IOError {
       )
     }
   }
-  @utf8.encode(s)
+  @osstr.encode(s)
 }
