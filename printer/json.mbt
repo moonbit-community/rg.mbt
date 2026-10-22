@@ -295,6 +295,7 @@ pub impl @searcher.Sink for JSONSink with fn matched(self, searcher, mat) {
   let submatches = make_submatches(
     mat.buf,
     hs + mat.start,
+    mat.end - mat.start,
     self.json.matches,
     self.replacer.replacement(),
   )
@@ -322,6 +323,7 @@ pub impl @searcher.Sink for JSONSink with fn context(self, searcher, ctx) {
     make_submatches(
       ctx.buf,
       ctx.start,
+      len,
       self.json.matches,
       self.replacer.replacement(),
     )
@@ -390,11 +392,25 @@ pub impl @searcher.Sink for JSONSink with fn finish(self, _searcher, finish) {
 fn make_submatches(
   buf : FixedArray[Byte],
   base : Int32,
+  len : Int32,
   matches : Array[@matcher.Match],
   replacement : (@termcolor.ByteVec, Array[@matcher.Match])?,
 ) -> Array[SubMatch] {
   let out = []
   for i, mat in matches {
+    // Matches are found in the whole buffer, but only those within the
+    // reported lines (`len` bytes from `base`) are reported. Matches can
+    // extend past them in multi-line mode when the match count limit
+    // truncates the lines (ripgrep 15.2.0 panics there); like the standard
+    // printer, clip them to the lines and skip those beyond.
+    if mat.end > len && mat.start >= len {
+      continue
+    }
+    let mat : @matcher.Match = if mat.end > len {
+      { start: mat.start, end: len, }
+    } else {
+      mat
+    }
     let repl = match replacement {
       Some((rbuf, rmatches)) => {
         let rm = rmatches[i]

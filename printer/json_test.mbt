@@ -144,3 +144,22 @@ test "non_utf8_path" {
     "{\"type\":\"begin\",\"data\":{\"path\":{\"bytes\":\"Zm9v/2Jhcg==\"}}}",
   )
 }
+
+///|
+test "multi_line_max_matches_keeps_submatches_within_lines" {
+  // A multi-line match truncated by the match limit: submatches past the
+  // reported lines are clipped or dropped (ripgrep 15.2.0 panics here).
+  let matcher = @grep_regex.RegexMatcherBuilder::new()
+    .multi_line(true)
+    .build("(?s:.*)")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().build(out)
+  @searcher.SearcherBuilder::new()
+  .multi_line(true)
+  .max_matches(Some(1))
+  .build()
+  .search_reader(matcher, reader(b"a\xFF\nb\n"), printer.sink(matcher))
+  let lines = rust_lines(contents(out))
+  assert_true(lines[1].contains("\"lines\":{\"bytes\":\"Yf8K\"}"))
+  assert_true(lines[1].contains("\"start\":2,\"end\":3}]"))
+}
