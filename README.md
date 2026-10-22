@@ -119,8 +119,18 @@ for most of the remaining gap to native.
 - No PCRE2 (`--pcre2` reports that PCRE2 is unavailable, like a build of
   ripgrep without the `pcre2` feature).
 - Searching is single threaded (`-j/--threads` is accepted; output is the
-  same as `rg -j1`).
-- No memory maps; files are always read incrementally.
+  same as `rg -j1`, including the single-threaded walker's error messages,
+  e.g. `IO error for operation on <dir>: ...` for unreadable directories).
+- No memory maps. Where ripgrep would use one (on Linux, when searching a
+  few files given explicitly, or with `--mmap`), the whole file is read and
+  searched as a slice instead, which gives the same output.
+- Where ripgrep 15.2.0 panics, the port does something sensible instead:
+  `--help`/`--version` in a config file are ignored, and JSON submatches of
+  a multi-line match truncated by `-m` are clipped to the reported lines.
+- `--regex-size-limit` uses regex-automata's accounting of NFA size, so the
+  smallest accepted limit is the same as ripgrep's for most patterns; for
+  patterns with large Unicode classes it can be slightly lower (by a few
+  percent).
 - On wasm:
   - No subprocesses: `--pre` reports that the preprocessor could not start,
     and `-z/--search-zip` searches compressed files as-is (as ripgrep does
