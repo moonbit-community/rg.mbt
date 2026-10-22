@@ -61,11 +61,36 @@ fn decode_chunked(
 }
 
 ///|
+/// Decodes `data` with the decoder for `label` directly (like encoding_rs's
+/// `decode_to_utf8` on consecutive chunks, the last one flagged as last),
+/// feeding it chunks of the given sizes.
+fn decode_direct(
+  label : String,
+  data : Bytes,
+  sizes : Array[Int32],
+) -> Bytes raise {
+  let dec = LegacyDecoder::new(Encoding::new(label).kind)
+  let raw = data.to_fixedarray()
+  let out = Buffer()
+  let mut pos = 0
+  let mut turn = 0
+  while pos < raw.length() {
+    let size = sizes[turn % sizes.length()]
+    turn += 1
+    let end = if pos + size < raw.length() { pos + size } else { raw.length() }
+    dec.feed(raw, pos, end, out)
+    pos = end
+  }
+  dec.finish(out)
+  out.to_bytes()
+}
+
+///|
 /// Decodes `data` both in one go and one byte at a time, checks that the
 /// results agree, and returns the decoded string.
 fn decode_str(label : String, data : Bytes) -> String raise {
-  let whole = decode_chunked(label, data, [1 << 20])
-  let bytewise = decode_chunked(label, data, [1])
+  let whole = decode_direct(label, data, [1 << 20])
+  let bytewise = decode_direct(label, data, [1])
   assert_eq(whole, bytewise)
   @utf8.decode(whole)
 }
@@ -292,14 +317,16 @@ test "decode UTF-16" {
 }
 
 ///|
-test "decode: BOM overrides the configured encoding" {
+test "decode: a UTF-16 BOM overrides the configured encoding" {
+  // Like encoding_rs_io with UTF-8 passthrough (as ripgrep configures it),
+  // a UTF-8 BOM is stripped but keeps the configured decoder.
   let utf8 = decode_chunked(
     "sjis",
     b"\xEF\xBB\xBF\x84Y",
     [1],
     bom_sniffing=true,
   )
-  assert_eq(utf8, b"\x84Y")
+  assert_eq(@utf8.decode(utf8), "Ш")
   let utf16 = decode_chunked(
     "euc-jp",
     b"\xFF\xFEA\x00",
@@ -612,21 +639,64 @@ test "decoders match encoding_rs on generated corpora" {
     let (name, h_pairs, h_gb4, h_random, h_random_small, h_iso) = entry
     assert_eq(Encoding::new(name).name(), name)
     assert_eq(
-      (name, fnv1a(decode_chunked(name, pairs, [8192]))),
+      (name, fnv1a(decode_direct(name, pairs, [8192]))),
       (name, h_pairs),
     )
-    assert_eq((name, fnv1a(decode_chunked(name, gb4, [8192]))), (name, h_gb4))
+    assert_eq((name, fnv1a(decode_direct(name, gb4, [8192]))), (name, h_gb4))
     assert_eq(
-      (name, fnv1a(decode_chunked(name, random, odd_sizes))),
+      (name, fnv1a(decode_direct(name, random, odd_sizes))),
       (name, h_random),
     )
     assert_eq(
-      (name, fnv1a(decode_chunked(name, random_small, [1]))),
+      (name, fnv1a(decode_direct(name, random_small, [1]))),
       (name, h_random_small),
     )
-    assert_eq(
-      (name, fnv1a(decode_chunked(name, iso, odd_sizes))),
-      (name, h_iso),
-    )
+    assert_eq((name, fnv1a(decode_direct(name, iso, odd_sizes))), (name, h_iso))
   }
+}
+
+///|
+test "decode: explicit UTF-8 is decoded, not passed through" {
+  // Like encoding_rs_io, an explicitly requested UTF-8 decoder replaces
+  // invalid sequences (only automatic detection passes UTF-8 through).
+  assert_eq(
+    @utf8.decode(decode_chunked("utf-8", b"abc\x81", [8192], bom_sniffing=true)),
+    "abc\u{FFFD}",
+  )
+  assert_eq(
+    decode_chunked("utf-8", b"\xEF\xBB\xBFx", [8192], bom_sniffing=true),
+    b"x",
+  )
+}
+
+///|
+test "decode: truncated UTF-16 surrogate and odd byte is one error" {
+  assert_eq(
+    @utf8.decode(decode_direct("UTF-16BE", b"\xD8\x00\x00", [8192])),
+    "\u{FFFD}",
+  )
+  assert_eq(
+    @utf8.decode(decode_direct("UTF-16LE", b"\x00\xD8\x41", [1])),
+    "\u{FFFD}",
+  )
+}
+
+///|
+test "decode: pending lead at the end depends on chunking like encoding_rs_io" {
+  // The BOM peeker returns the first 3 bytes on their own. Big5, EUC-KR and
+  // Shift_JIS forget a pending lead when called with empty input before the
+  // final flush, which only happens if the chunk with the lead produced
+  // output.
+  let r = (data : Bytes) => {
+    decode_chunked("big5", data, [8192], bom_sniffing=true)
+  }
+  assert_eq(r(b"a\xE8"), b"a")
+  assert_eq(@utf8.decode(r(b"abc\xE8")), "abc\u{FFFD}")
+  assert_eq(r(b"abcd\xE8"), b"abcd")
+  assert_eq(@utf8.decode(r(b"\xE8")), "\u{FFFD}")
+  // Other decoders keep the pending sequence.
+  assert_eq(
+    @utf8.decode(decode_chunked("gbk", b"a\x81", [8192], bom_sniffing=true)),
+    "a\u{FFFD}",
+  )
 }

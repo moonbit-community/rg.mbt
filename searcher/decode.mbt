@@ -125,22 +125,61 @@ pub fn slice_has_bom(
 }
 
 ///|
-/// A reader that sniffs a BOM and transcodes its input to UTF-8.
+/// The encoding of a BOM at the start of the first (up to) 3 bytes of a
+/// stream, like encoding_rs_io's `PossibleBom::encoding`: a BOM is only
+/// recognized when 3 bytes could be peeked.
+fn peeked_bom(peek : FixedArray[Byte], len : Int32) -> EncKind? {
+  if len < 3 {
+    return None
+  }
+  match sniff_bom(peek, 0, len) {
+    Some((kind, _)) => Some(kind)
+    None => None
+  }
+}
+
+///|
+/// The number of leading peeked bytes stripped as a BOM, like
+/// encoding_rs_io's `PossibleBom::as_slice(false)`.
+fn peeked_bom_len(peek : FixedArray[Byte], len : Int32) -> Int32 {
+  if len <= 1 {
+    0
+  } else if (peek[0] == b'\xFF' && peek[1] == b'\xFE') ||
+    (peek[0] == b'\xFE' && peek[1] == b'\xFF') {
+    2
+  } else if len == 3 &&
+    peek[0] == b'\xEF' &&
+    peek[1] == b'\xBB' &&
+    peek[2] == b'\xBF' {
+    3
+  } else {
+    0
+  }
+}
+
+///|
+/// A reader that sniffs a BOM and transcodes its input to UTF-8. It mirrors
+/// encoding_rs_io's `DecodeReaderBytes` as configured by ripgrep (UTF-8
+/// passthrough, BOM stripping and override), including how input is read
+/// and decoded in chunks, which affects edge cases at the end of the input.
 priv struct DecodeReader {
   inner : &Reader
   encoding : EncKind?
   bom_sniffing : Bool
   mut started : Bool
-  mut mode : EncKind?
-  // Raw input waiting to be decoded.
+  // The decoder, or `None` to pass the input through unchanged.
+  mut decoder : LegacyDecoder?
+  // The first (up to) 3 bytes, peeked to sniff a BOM; `peek[peek_pos:
+  // peek_len]` are returned by the first read on their own (like
+  // encoding_rs_io's `BomPeeker`).
+  peek : FixedArray[Byte]
+  mut peek_pos : Int32
+  mut peek_len : Int32
+  mut peek_done : Bool
+  // Raw input chunk to decode.
   raw : FixedArray[Byte]
-  mut raw_start : Int32
-  mut raw_end : Int32
-  mut eof : Bool
-  // State of the legacy decoder, if `mode` needs one.
-  mut legacy : LegacyDecoder?
-  // Whether the end of the input has been fully decoded.
-  mut flushed : Bool
+  // Whether the input has been fully read and decoded.
+  mut exhausted : Bool
   // Decoded output waiting to be returned.
   out : Buffer
   mut out_pos : Int32
@@ -158,13 +197,13 @@ fn DecodeReader::new(
     encoding,
     bom_sniffing,
     started: false,
-    mode: None,
+    decoder: None,
+    peek: FixedArray::make(3, b'\x00'),
+    peek_pos: 0,
+    peek_len: 0,
+    peek_done: false,
     raw: FixedArray::make(8192, b'\x00'),
-    raw_start: 0,
-    raw_end: 0,
-    eof: false,
-    legacy: None,
-    flushed: false,
+    exhausted: false,
     out: Buffer(),
     out_pos: 0,
     out_bytes: b"",
@@ -172,54 +211,53 @@ fn DecodeReader::new(
 }
 
 ///|
-fn DecodeReader::fill_raw(self : DecodeReader) -> Unit raise {
-  if self.eof {
-    return
+fn DecodeReader::start(self : DecodeReader) -> Unit raise {
+  self.started = true
+  // Peek exactly 3 bytes (or until EOF).
+  while self.peek_len < 3 {
+    let n = self.inner.read(self.peek, self.peek_len, 3 - self.peek_len)
+    if n == 0 {
+      break
+    }
+    self.peek_len += n
   }
-  if self.raw_start > 0 {
-    let n = self.raw_end - self.raw_start
-    self.raw.blit_to(self.raw, len=n, src_offset=self.raw_start, dst_offset=0)
-    self.raw_start = 0
-    self.raw_end = n
+  if self.bom_sniffing {
+    // The BOM is stripped even when it is too short to be recognized.
+    self.peek_pos = peeked_bom_len(self.peek, self.peek_len)
   }
-  let n = self.inner.read(
-    self.raw,
-    self.raw_end,
-    self.raw.length() - self.raw_end,
-  )
-  if n == 0 {
-    self.eof = true
-  } else {
-    self.raw_end += n
+  self.decoder = self.encoding.map(k => LegacyDecoder::new(k, bom_removal=true))
+  if self.bom_sniffing && peeked_bom(self.peek, self.peek_len) is Some(kind) {
+    // A UTF-8 BOM keeps the configured decoder (UTF-8 is passed through),
+    // while a UTF-16 BOM overrides it.
+    if kind != Utf8 {
+      self.decoder = Some(LegacyDecoder::new(kind, bom_removal=true))
+    }
   }
 }
 
 ///|
-fn DecodeReader::start(self : DecodeReader) -> Unit raise {
-  self.started = true
-  if self.bom_sniffing {
-    // Read exactly 3 bytes (or until EOF) to sniff a BOM, just like
-    // encoding_rs_io's BOM peeker. The peeked bytes are returned by the
-    // first read on their own.
-    while self.raw_end < 3 && !self.eof {
-      let n = self.inner.read(self.raw, self.raw_end, 3 - self.raw_end)
-      if n == 0 {
-        self.eof = true
+/// Reads from the input, returning the remaining peeked bytes first (on
+/// their own).
+fn DecodeReader::read_input(
+  self : DecodeReader,
+  buf : FixedArray[Byte],
+  start : Int32,
+  len : Int32,
+) -> Int32 raise {
+  if !self.peek_done {
+    if self.peek_pos < self.peek_len {
+      let n = if self.peek_len - self.peek_pos < len {
+        self.peek_len - self.peek_pos
       } else {
-        self.raw_end += n
+        len
       }
+      self.peek.blit_to(buf, len=n, src_offset=self.peek_pos, dst_offset=start)
+      self.peek_pos += n
+      return n
     }
-    if sniff_bom(self.raw, self.raw_start, self.raw_end) is Some((kind, len)) {
-      self.raw_start += len
-      self.mode = Some(kind)
-      return
-    }
+    self.peek_done = true
   }
-  self.mode = self.encoding
-  match self.encoding {
-    None | Some(Utf8 | Utf16LE | Utf16BE) => ()
-    Some(kind) => self.legacy = Some(LegacyDecoder::new(kind))
-  }
+  self.inner.read(buf, start, len)
 }
 
 ///|
@@ -242,78 +280,26 @@ fn push_char(out : Buffer, c : Int32) -> Unit {
 }
 
 ///|
-/// Decodes as much buffered raw input as possible into `self.out`.
-fn DecodeReader::decode_some(self : DecodeReader, kind : EncKind) -> Unit {
-  let out = self.out
-  match kind {
-    Utf8 => ()
-    SingleByte(_)
-    | Gbk
-    | Gb18030
-    | Big5
-    | EucJp
-    | Iso2022Jp
-    | ShiftJis
-    | EucKr
-    | XUserDefined => {
-      if self.legacy is Some(dec) {
-        dec.feed(self.raw, self.raw_start, self.raw_end, out)
-        if self.eof {
-          dec.finish(out)
-        }
-      }
-      self.raw_start = self.raw_end
-      if self.eof {
-        self.flushed = true
-      }
-    }
-    Utf16LE | Utf16BE => {
-      let le = kind == Utf16LE
-      let unit = (i : Int32) => {
-        if le {
-          self.raw[i].to_int() | (self.raw[i + 1].to_int() << 8)
-        } else {
-          (self.raw[i].to_int() << 8) | self.raw[i + 1].to_int()
-        }
-      }
-      let mut i = self.raw_start
-      while i + 1 < self.raw_end {
-        let u = unit(i)
-        if u >= 0xD800 && u <= 0xDBFF {
-          if i + 3 < self.raw_end {
-            let u2 = unit(i + 2)
-            if u2 >= 0xDC00 && u2 <= 0xDFFF {
-              push_char(out, 0x10000 + ((u - 0xD800) << 10) + (u2 - 0xDC00))
-              i += 4
-            } else {
-              push_char(out, 0xFFFD)
-              i += 2
-            }
-          } else if self.eof {
-            push_char(out, 0xFFFD)
-            i += 2
-          } else {
-            break
-          }
-        } else if u >= 0xDC00 && u <= 0xDFFF {
-          push_char(out, 0xFFFD)
-          i += 2
-        } else {
-          push_char(out, u)
-          i += 2
-        }
-      }
-      if self.eof && i < self.raw_end {
-        // A dangling odd byte.
-        push_char(out, 0xFFFD)
-        i = self.raw_end
-      }
-      self.raw_start = i
-      if self.eof {
-        self.flushed = true
-      }
-    }
-  }
+/// Copies pending decoded output into `buf[start:start+len]`.
+fn DecodeReader::serve(
+  self : DecodeReader,
+  buf : FixedArray[Byte],
+  start : Int32,
+  len : Int32,
+) -> Int32 {
+  let avail = self.out_bytes.length() - self.out_pos
+  let n = if avail < len { avail } else { len }
+  buf.blit_from_bytes(start, self.out_bytes, self.out_pos, n)
+  self.out_pos += n
+  n
+}
+
+///|
+/// Takes the output decoded so far for serving.
+fn DecodeReader::take_out(self : DecodeReader) -> Unit {
+  self.out_bytes = self.out.to_bytes()
+  self.out_pos = 0
+  self.out.reset()
 }
 
 ///|
@@ -321,45 +307,39 @@ impl Reader for DecodeReader with fn read(self, buf, start, len) {
   if !self.started {
     self.start()
   }
-  match self.mode {
-    None | Some(Utf8) => {
-      // Pass through, first draining any sniffed bytes.
-      if self.raw_start < self.raw_end {
-        let n = if self.raw_end - self.raw_start < len {
-          self.raw_end - self.raw_start
-        } else {
-          len
-        }
-        self.raw.blit_to(
-          buf,
-          len=n,
-          src_offset=self.raw_start,
-          dst_offset=start,
-        )
-        self.raw_start += n
-        return n
-      }
-      if self.eof {
-        return 0
-      }
-      self.inner.read(buf, start, len)
+  guard self.decoder is Some(dec) else {
+    return self.read_input(buf, start, len)
+  }
+  if self.out_pos < self.out_bytes.length() {
+    return self.serve(buf, start, len)
+  }
+  if self.exhausted || len == 0 {
+    return 0
+  }
+  // Like encoding_rs_io's `transcode`: read a chunk and decode it (not as
+  // the last chunk); return as soon as some output was produced. At the end
+  // of the input the decoder is called once more with empty input before
+  // being flushed (which matters to some decoders, see `decode_empty`).
+  let mut n = self.read_input(self.raw, 0, self.raw.length())
+  if n == 0 {
+    self.exhausted = true
+  }
+  for ;; {
+    if n == 0 {
+      dec.decode_empty()
+    } else {
+      dec.feed(self.raw, 0, n, self.out)
     }
-    Some(kind) => {
-      while self.out_pos >= self.out_bytes.length() {
-        if self.flushed {
-          return 0
-        }
-        self.fill_raw()
-        self.out.reset()
-        self.decode_some(kind)
-        self.out_bytes = self.out.to_bytes()
-        self.out_pos = 0
-      }
-      let avail = self.out_bytes.length() - self.out_pos
-      let n = if avail < len { avail } else { len }
-      buf.blit_from_bytes(start, self.out_bytes, self.out_pos, n)
-      self.out_pos += n
-      n
+    if self.out.length() > 0 {
+      self.take_out()
+      return self.serve(buf, start, len)
+    }
+    n = self.read_input(self.raw, 0, self.raw.length())
+    if n == 0 {
+      self.exhausted = true
+      dec.finish(self.out)
+      self.take_out()
+      return self.serve(buf, start, len)
     }
   }
 }

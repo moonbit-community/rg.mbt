@@ -1,4 +1,4 @@
-// Streaming WHATWG decoders for the legacy (non-UTF) encodings, following the
+// Streaming WHATWG decoders (UTF-8, UTF-16 and the legacy encodings), following the
 // Encoding Standard's decoder handlers (and thus encoding_rs) exactly,
 // including U+FFFD error replacement and "restore byte to the stream"
 // semantics.
@@ -51,13 +51,36 @@ priv struct LegacyDecoder {
   // Restored bytes, top of stack is processed next.
   pending : FixedArray[Int32]
   mut npending : Int32
+  // UTF-8 decoder state.
+  mut u8_cp : Int32
+  mut u8_seen : Int32
+  mut u8_needed : Int32
+  mut u8_lower : Int32
+  mut u8_upper : Int32
+  // UTF-16 decoder state (-1 when unset).
+  mut u16_lead_byte : Int32
+  mut u16_lead_surrogate : Int32
+  // BOM removal (encoding_rs's `new_decoder_with_bom_removal`): the number
+  // of bytes of this encoding's BOM matched so far, or -1 once decided.
+  bom : FixedArray[Int32]
+  mut bom_state : Int32
 }
 
 ///|
-fn LegacyDecoder::new(kind : EncKind) -> LegacyDecoder {
+fn LegacyDecoder::new(
+  kind : EncKind,
+  bom_removal~ : Bool = false,
+) -> LegacyDecoder {
   let table = match kind {
     SingleByte(i) => single_byte_indexes[i].get()
     _ => FixedArray::make(0, 0)
+  }
+  // Only the UTF encodings have a BOM to remove.
+  let bom : FixedArray[Int32] = match kind {
+    Utf8 if bom_removal => [0xEF, 0xBB, 0xBF]
+    Utf16LE if bom_removal => [0xFF, 0xFE]
+    Utf16BE if bom_removal => [0xFE, 0xFF]
+    _ => []
   }
   {
     kind,
@@ -71,6 +94,19 @@ fn LegacyDecoder::new(kind : EncKind) -> LegacyDecoder {
     output: false,
     pending: FixedArray::make(4, 0),
     npending: 0,
+    u8_cp: 0,
+    u8_seen: 0,
+    u8_needed: 0,
+    u8_lower: 0x80,
+    u8_upper: 0xBF,
+    u16_lead_byte: -1,
+    u16_lead_surrogate: -1,
+    bom,
+    bom_state: if bom.length() > 0 {
+      0
+    } else {
+      -1
+    },
   }
 }
 
@@ -98,6 +134,20 @@ fn LegacyDecoder::feed(
   end : Int32,
   out : Buffer,
 ) -> Unit {
+  let mut start = start
+  // Remove this encoding's BOM at the start of the stream (it may be split
+  // across chunks); on a mismatch the matched prefix is decoded normally.
+  while self.bom_state >= 0 && start < end {
+    if raw[start].to_int() == self.bom[self.bom_state] {
+      self.bom_state += 1
+      start += 1
+      if self.bom_state == self.bom.length() {
+        self.bom_state = -1
+      }
+    } else {
+      self.replay_bom_prefix(out)
+    }
+  }
   match self.kind {
     SingleByte(_) =>
       for i in start..<end {
@@ -127,8 +177,34 @@ fn LegacyDecoder::feed(
 }
 
 ///|
+/// Decodes the bytes of a partially matched BOM normally (they turned out
+/// not to be a BOM), and stops looking for one.
+fn LegacyDecoder::replay_bom_prefix(self : LegacyDecoder, out : Buffer) -> Unit {
+  let n = self.bom_state
+  self.bom_state = -1
+  for i in 0..<n {
+    ignore(self.handle(self.bom[i], out))
+    self.drain(out)
+  }
+}
+
+///|
+/// Handles a decode call with empty input that isn't the last one. This is
+/// a no-op except that, like encoding_rs, the Shift_JIS, EUC-KR and Big5
+/// decoders forget a pending lead byte (so it is not reported at the end).
+fn LegacyDecoder::decode_empty(self : LegacyDecoder) -> Unit {
+  match self.kind {
+    ShiftJis | EucKr | Big5 => self.lead = 0
+    _ => ()
+  }
+}
+
+///|
 /// Processes the end of the stream.
 fn LegacyDecoder::finish(self : LegacyDecoder, out : Buffer) -> Unit {
+  if self.bom_state >= 0 {
+    self.replay_bom_prefix(out)
+  }
   for ;; {
     let finished = self.handle(EOS, out)
     self.drain(out)
@@ -168,8 +244,132 @@ fn LegacyDecoder::handle(self : LegacyDecoder, b : Int32, out : Buffer) -> Bool 
         push_char(out, if b < 0x80 { b } else { 0xF780 + b - 0x80 })
         false
       }
-    Utf8 | Utf16LE | Utf16BE => true
+    Utf8 => self.handle_utf8(b, out)
+    Utf16LE => self.handle_utf16(b, false, out)
+    Utf16BE => self.handle_utf16(b, true, out)
   }
+}
+
+///|
+/// The Encoding Standard's UTF-8 decoder handler.
+fn LegacyDecoder::handle_utf8(
+  self : LegacyDecoder,
+  b : Int32,
+  out : Buffer,
+) -> Bool {
+  if b == EOS {
+    if self.u8_needed != 0 {
+      self.u8_needed = 0
+      push_error(out)
+      return false
+    }
+    return true
+  }
+  if self.u8_needed == 0 {
+    if b < 0x80 {
+      push_char(out, b)
+    } else if b >= 0xC2 && b <= 0xDF {
+      self.u8_needed = 1
+      self.u8_cp = b & 0x1F
+    } else if b >= 0xE0 && b <= 0xEF {
+      if b == 0xE0 {
+        self.u8_lower = 0xA0
+      }
+      if b == 0xED {
+        self.u8_upper = 0x9F
+      }
+      self.u8_needed = 2
+      self.u8_cp = b & 0xF
+    } else if b >= 0xF0 && b <= 0xF4 {
+      if b == 0xF0 {
+        self.u8_lower = 0x90
+      }
+      if b == 0xF4 {
+        self.u8_upper = 0x8F
+      }
+      self.u8_needed = 3
+      self.u8_cp = b & 0x7
+    } else {
+      push_error(out)
+    }
+    return false
+  }
+  if b < self.u8_lower || b > self.u8_upper {
+    self.u8_cp = 0
+    self.u8_needed = 0
+    self.u8_seen = 0
+    self.u8_lower = 0x80
+    self.u8_upper = 0xBF
+    self.restore(b)
+    push_error(out)
+    return false
+  }
+  self.u8_lower = 0x80
+  self.u8_upper = 0xBF
+  self.u8_cp = (self.u8_cp << 6) | (b & 0x3F)
+  self.u8_seen += 1
+  if self.u8_seen == self.u8_needed {
+    push_char(out, self.u8_cp)
+    self.u8_cp = 0
+    self.u8_needed = 0
+    self.u8_seen = 0
+  }
+  false
+}
+
+///|
+/// The Encoding Standard's shared UTF-16 decoder handler.
+fn LegacyDecoder::handle_utf16(
+  self : LegacyDecoder,
+  b : Int32,
+  be : Bool,
+  out : Buffer,
+) -> Bool {
+  if b == EOS {
+    if self.u16_lead_byte >= 0 || self.u16_lead_surrogate >= 0 {
+      self.u16_lead_byte = -1
+      self.u16_lead_surrogate = -1
+      push_error(out)
+      return false
+    }
+    return true
+  }
+  if self.u16_lead_byte < 0 {
+    self.u16_lead_byte = b
+    return false
+  }
+  let lead = self.u16_lead_byte
+  self.u16_lead_byte = -1
+  let unit = if be { (lead << 8) | b } else { (b << 8) | lead }
+  if self.u16_lead_surrogate >= 0 {
+    let ls = self.u16_lead_surrogate
+    self.u16_lead_surrogate = -1
+    if unit >= 0xDC00 && unit <= 0xDFFF {
+      push_char(out, 0x10000 + ((ls - 0xD800) << 10) + (unit - 0xDC00))
+      return false
+    }
+    // Prepend the code unit's bytes to the stream (the top of the restore
+    // stack is processed first).
+    let (b1, b2) = if be {
+      (unit >> 8, unit & 0xFF)
+    } else {
+      (unit & 0xFF, unit >> 8)
+    }
+    self.restore(b2)
+    self.restore(b1)
+    push_error(out)
+    return false
+  }
+  if unit >= 0xD800 && unit <= 0xDBFF {
+    self.u16_lead_surrogate = unit
+    return false
+  }
+  if unit >= 0xDC00 && unit <= 0xDFFF {
+    push_error(out)
+    return false
+  }
+  push_char(out, unit)
+  false
 }
 
 ///|
