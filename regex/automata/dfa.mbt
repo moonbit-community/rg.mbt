@@ -512,11 +512,20 @@ pub fn LazyDFA::find_fwd(
   end : Int32,
   anchored : Bool,
   earliest : Bool,
+  pre? : Prefilter,
 ) -> Int32 {
-  let prev = if start > 0 { hay[start - 1].to_int() } else { -1 }
-  let mut sid = self.start_state(anchored, prev)
-  let mut mat = DFA_NO_MATCH
   let mut at = start
+  let pre = if anchored { None } else { pre }
+  if pre is Some(p) {
+    match p.find(hay, at, end) {
+      None => return DFA_NO_MATCH
+      Some((s, _)) => at = s
+    }
+  }
+  let prev = if at > 0 { hay[at - 1].to_int() } else { -1 }
+  let mut sid = self.start_state(anchored, prev)
+  let mut start_sid = sid
+  let mut mat = DFA_NO_MATCH
   let stride = self.stride
   let classes = self.classes
   while at < end {
@@ -536,6 +545,17 @@ pub fn LazyDFA::find_fwd(
       }
     }
     at += 1
+    if sid == start_sid && mat < 0 && pre is Some(p) {
+      match p.find(hay, at, end) {
+        None => return DFA_NO_MATCH
+        Some((s, _)) =>
+          if s > at {
+            at = s
+            sid = self.start_state(false, hay[at - 1].to_int())
+            start_sid = sid
+          }
+      }
+    }
   }
   // End of input transition.
   if end < len {

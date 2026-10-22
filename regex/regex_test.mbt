@@ -1,0 +1,102 @@
+///|
+fn is_char_boundary(hay : FixedArray[Byte], len : Int32, at : Int32) -> Bool {
+  at >= len || at == 0 || (hay[at].to_int() & 0xC0) != 0x80
+}
+
+///|
+test "corpus: meta regex" {
+  let failures = []
+  for tc in @testdata.cases {
+    if tc.name.has_prefix("regex-lite/") || tc.line_terminator is Some(_) {
+      continue
+    }
+    let config = {
+      ..@syntax.ParseConfig::default(),
+      case_insensitive: tc.case_insensitive,
+      unicode: tc.unicode,
+      utf8: tc.utf8,
+    }
+    let hir = @syntax.parse(tc.regex, config~) catch { _ => continue }
+    let re = @regex.Regex::from_hir(hir) catch { _ => abort("build") }
+    if tc.anchored {
+      continue
+    }
+    let hay = tc.haystack.to_fixedarray()
+    let len = hay.length()
+    let (bstart, bend) = match tc.bounds {
+      Some(b) => b
+      None => (0, len)
+    }
+    let want_groups = if tc.matches.is_empty() {
+      1
+    } else {
+      tc.matches[0].length()
+    }
+    let got : Array[Array[(Int32, Int32)?]] = []
+    let mut start = bstart
+    let mut last_end : Int32? = None
+    while start <= bend {
+      if tc.match_limit is Some(limit) && got.length() >= limit {
+        break
+      }
+      let slots = FixedArray::make(re.captures_len() * 2, -1)
+      if !re.captures_at(hay, len, start, bend, slots) {
+        break
+      }
+      let s = slots[0]
+      let e = slots[1]
+      if s == e &&
+        (last_end == Some(e) || (tc.utf8 && !is_char_boundary(hay, len, e))) {
+        start = e + 1
+        continue
+      }
+      let groups = []
+      for g in 0..<want_groups {
+        if slots[2 * g] >= 0 {
+          groups.push(Some((slots[2 * g], slots[2 * g + 1])))
+        } else {
+          groups.push(None)
+        }
+      }
+      got.push(groups)
+      last_end = Some(e)
+      start = e
+    }
+    let expected = tc.matches.map(g => g.copy())
+    if got != expected {
+      failures.push(
+        "\{tc.name}: regex=\{tc.regex} want=\{Repr(expected)} got=\{Repr(got)}",
+      )
+    }
+  }
+  for f in failures {
+    println(f)
+  }
+  inspect(failures.length(), content="0")
+}
+
+///|
+test "basic api" {
+  let re = @regex.Regex::new("foo\\d+") catch { _ => abort("") }
+  debug_inspect(re.find(b"xx foo123 foo9"), content="Some((3, 9))")
+  debug_inspect(re.find_all(b"xx foo123 foo9"), content="[(3, 9), (10, 14)]")
+  inspect(re.is_accelerated(), content="true")
+  let re = @regex.Regex::new("") catch { _ => abort("") }
+  debug_inspect(re.find_all(b"abc"), content="[(0, 0), (1, 1), (2, 2), (3, 3)]")
+  let re = @regex.Regex::new("foo|bar") catch { _ => abort("") }
+  debug_inspect(re.find_all(b"barfoo"), content="[(0, 3), (3, 6)]")
+  let err = try @regex.Regex::new("(") catch {
+    e => e.to_string()
+  } noraise {
+    _ => ""
+  }
+  inspect(
+    err,
+    content=(
+      #|regex parse error:
+      #|    (
+      #|    ^
+      #|error: unclosed group
+    ),
+  )
+}

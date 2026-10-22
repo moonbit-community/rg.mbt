@@ -17,6 +17,8 @@ pub fn is_word_byte(Int32) -> Bool
 
 pub fn look_matches(@syntax.Look, FixedArray[Byte], Int32, Int32, lineterm? : Int32) -> Bool
 
+pub fn memchr(Byte, FixedArray[Byte], Int32, Int32) -> Int32?
+
 pub fn utf8_sequences(Int32, Int32) -> Array[Array[(Int32, Int32)]]
 
 // Errors
@@ -69,7 +71,17 @@ pub struct PikeVM {
 }
 pub fn PikeVM::new(NFA) -> Self
 pub fn PikeVM::nfa(Self) -> NFA
-pub fn PikeVM::search_slots(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool, FixedArray[Int32]) -> Bool
+pub fn PikeVM::search_slots(Self, FixedArray[Byte], Int32, Int32, Int32, Bool, Bool, FixedArray[Int32], pre? : Prefilter) -> Bool
+
+pub(all) enum Prefilter {
+  Byte(Int32)
+  ByteSet(FixedArray[Bool])
+  Memmem(FixedArray[Byte], Int32)
+  Multi(FixedArray[Bool], Array[Array[FixedArray[Byte]]], Int32)
+}
+pub fn Prefilter::find(Self, FixedArray[Byte], Int32, Int32) -> (Int32, Int32)?
+pub fn Prefilter::is_fast(Self) -> Bool
+pub fn Prefilter::new(Array[Bytes]) -> Self?
 
 pub(all) enum State {
   ByteRange(Int32, Int32, Int32)

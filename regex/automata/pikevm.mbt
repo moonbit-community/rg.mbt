@@ -103,6 +103,7 @@ pub fn PikeVM::search_slots(
   anchored : Bool,
   earliest : Bool,
   slots : FixedArray[Int32],
+  pre? : Prefilter,
 ) -> Bool {
   let nslots = if slots.length() < self.cache_slots {
     slots.length()
@@ -128,6 +129,12 @@ pub fn PikeVM::search_slots(
       }
       if anchored && at > start {
         break
+      }
+      if !anchored && pre is Some(p) {
+        match p.find(hay, at, end) {
+          None => break
+          Some((s, _)) => at = s
+        }
       }
     }
     if !matched && (!anchored || at == start) {

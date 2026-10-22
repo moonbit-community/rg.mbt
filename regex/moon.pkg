@@ -1,0 +1,10 @@
+import {
+  "dii/rg/regex/syntax",
+  "dii/rg/regex/automata",
+}
+
+import {
+  "dii/rg/regex/internal/testdata",
+} for "test"
+
+warnings = "-implicit_impl_as_method"
