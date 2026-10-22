@@ -1,0 +1,22 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "moonbitlang/core/encoding/utf8",
+} for "test"
+
+supported_targets = "native+wasm"
+
+options(
+  "native-stub": [ "sys_native.c" ],
+  targets: {
+    "sys_native.mbt": [ "native" ],
+    "sys_native_test.mbt": [ "native" ],
+    "sys_wasm.mbt": [ "wasm" ],
+    "sys_wasm_test.mbt": [ "wasm" ],
+    "wasi_errno.mbt": [ "wasm" ],
+  },
+)
+
+warnings = "-implicit_impl_as_method"
