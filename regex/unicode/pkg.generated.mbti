@@ -12,6 +12,8 @@ pub fn each_fold_in_range(Int32, Int32, (Int32, ArrayView[Int32]) -> Unit) -> Un
 
 pub fn fold_overlaps(Int32, Int32) -> Bool
 
+pub fn is_uppercase(Int32) -> Bool
+
 pub fn is_word_character(Int32) -> Bool
 
 pub fn perl_digit() -> Array[(Int32, Int32)]

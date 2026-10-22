@@ -1,0 +1,10 @@
+import {
+  "dii/rg/matcher",
+  "dii/rg/regex",
+  "dii/rg/regex/syntax",
+  "dii/rg/regex/automata",
+  "dii/rg/regex/unicode",
+  "moonbitlang/core/encoding/utf8",
+}
+
+warnings = "-implicit_impl_as_method"

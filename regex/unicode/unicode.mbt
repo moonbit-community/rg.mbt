@@ -384,3 +384,37 @@ pub fn is_word_character(c : Int32) -> Bool {
   }
   false
 }
+
+///|
+let uppercase_cache : Ref[Array[(Int32, Int32)]?] = Ref(None)
+
+///|
+/// Returns true if the scalar value has the Unicode `Uppercase` property
+/// (Rust's `char::is_uppercase`).
+pub fn is_uppercase(c : Int32) -> Bool {
+  if c < 0x80 {
+    return c >= 'A' && c <= 'Z'
+  }
+  let table = match uppercase_cache.val {
+    Some(t) => t
+    None => {
+      let t = decode_ranges(find_table(bool_data, "Uppercase").unwrap())
+      uppercase_cache.val = Some(t)
+      t
+    }
+  }
+  let mut lo = 0
+  let mut hi = table.length()
+  while lo < hi {
+    let mid = lo + (hi - lo) / 2
+    let (s, e) = table[mid]
+    if c < s {
+      hi = mid
+    } else if c > e {
+      lo = mid + 1
+    } else {
+      return true
+    }
+  }
+  false
+}

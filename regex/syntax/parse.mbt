@@ -1064,8 +1064,10 @@ fn Parser::parse_hex_brace(
 
 ///|
 fn Parser::parse_decimal(self : Parser) -> Int32 raise SyntaxError {
-  let scratch = StringBuilder()
-  let mut n = 0
+  // Decimals are parsed as u32 values (like Rust). Values that don't fit in
+  // an Int are clamped, which is harmless since such repetitions can never
+  // be compiled anyway.
+  let mut n : Int64 = 0
   while !self.is_eof() && is_whitespace_char(self.char()) {
     ignore(self.bump())
   }
@@ -1073,12 +1075,11 @@ fn Parser::parse_decimal(self : Parser) -> Int32 raise SyntaxError {
   let mut overflow = false
   let mut count = 0
   while !self.is_eof() && self.char() >= '0' && self.char() <= '9' {
-    scratch.write_char(self.char())
-    let d = self.char().to_int() - '0'.to_int()
-    if n > (0x7FFFFFFF - d) / 10 {
+    let d = (self.char().to_int() - '0'.to_int()).to_int64()
+    n = n * 10L + d
+    if n > 0xFFFFFFFFL {
       overflow = true
-    } else {
-      n = n * 10 + d
+      n = 0xFFFFFFFFL
     }
     count += 1
     ignore(self.bump_and_bump_space())
@@ -1093,7 +1094,11 @@ fn Parser::parse_decimal(self : Parser) -> Int32 raise SyntaxError {
   if overflow {
     raise self.error(span, DecimalInvalid)
   }
-  n
+  if n > 0x7FFFFFFFL {
+    0x7FFFFFFF
+  } else {
+    n.to_int()
+  }
 }
 
 ///|
