@@ -155,7 +155,19 @@ pub fn look_matches(
       !is_word_char_rev(hay, hs, at) && is_word_char_fwd(hay, he, at)
     WordEndUnicode =>
       is_word_char_rev(hay, hs, at) && !is_word_char_fwd(hay, he, at)
-    WordStartHalfUnicode => !is_word_char_rev(hay, hs, at)
-    WordEndHalfUnicode => !is_word_char_fwd(hay, he, at)
+    // Like regex-automata, the half assertions never match next to invalid
+    // UTF-8 (e.g. inside a codepoint).
+    WordStartHalfUnicode =>
+      if at > hs && decode_rev(hay, hs, at) is None {
+        false
+      } else {
+        !is_word_char_rev(hay, hs, at)
+      }
+    WordEndHalfUnicode =>
+      if at < he && decode_fwd(hay, he, at) is None {
+        false
+      } else {
+        !is_word_char_fwd(hay, he, at)
+      }
   }
 }

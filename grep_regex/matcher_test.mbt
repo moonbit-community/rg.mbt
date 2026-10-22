@@ -102,3 +102,14 @@ test "find iter and captures" {
   })
   inspect(@utf8.decode_lossy(dst.to_bytes()), content="xx [1:foo] [2:bar]")
 }
+
+///|
+test "word mode never matches inside a codepoint" {
+  // `-w` wraps the pattern in Unicode half word boundaries, which must not
+  // match next to invalid UTF-8 (e.g. between the bytes of "é").
+  let hay = b"\xC3\xA9".to_fixedarray()
+  for pat in ["", "(?-u:.)"] {
+    let m = @grep_regex.RegexMatcherBuilder::new().word(true).build(pat)
+    assert_true(@matcher.Matcher::find_at(m, hay, 0, hay.length(), 0) is None)
+  }
+}
