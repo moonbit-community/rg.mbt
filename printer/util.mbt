@@ -219,16 +219,23 @@ fn Sunk::from_sink_context(
 }
 
 ///|
+/// Shared empty values for `Sunk::set_empty` (never mutated).
+let empty_buf : FixedArray[Byte] = []
+
+///|
+let empty_matches : Array[@matcher.Match] = []
+
+///|
 /// Resets `self` to the empty state (see `Sunk::empty`).
 fn Sunk::set_empty(self : Sunk) -> Unit {
-  self.buf = []
+  self.buf = empty_buf
   self.start = 0
   self.end = 0
   self.absolute_byte_offset = 0
   self.line_number = None
   self.context_kind = None
-  self.matches = []
-  self.original_matches = []
+  self.matches = empty_matches
+  self.original_matches = empty_matches
 }
 
 ///|
