@@ -1035,7 +1035,13 @@ fn stdout_handle() -> Handle? {
     // Can't identify the file.
     return None
   }
-  Some({ dev: md.dev, ino: md.ino, canonical: None, })
+  // On macOS, `/dev/stdout` resolves through the `fdesc` file system: the
+  // inode number is the one of the open file, but the device number is the
+  // one of `/dev`. In that case only the inode number can be compared.
+  let dev_known = try @sys.metadata("/dev").dev != md.dev catch {
+    _ => true
+  }
+  Some({ dev: md.dev, ino: md.ino, dev_known, canonical: None, })
 }
 
 ///|

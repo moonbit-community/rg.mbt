@@ -199,7 +199,6 @@ pub struct WalkParallel {
   // private fields
 }
 pub fn WalkParallel::run(Self, () -> (Result[DirEntry, IgnoreError]) -> WalkState) -> Unit
-pub fn WalkParallel::threads(Self) -> Int32
 pub fn WalkParallel::visit(Self, &ParallelVisitorBuilder) -> Unit
 
 pub(all) enum WalkState {

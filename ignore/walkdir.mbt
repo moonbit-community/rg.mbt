@@ -124,12 +124,16 @@ fn RawEntry::from_path(
 
 ///|
 /// A file "handle" used to determine whether two paths refer to the same
-/// file (like the `same-file` crate). On backends that cannot report device
-/// and inode numbers (they are reported as 0), canonicalized paths are
-/// compared instead.
+/// file (like the `same-file` crate), by comparing device and inode numbers.
+///
+/// On backends that cannot report device and inode numbers (they are
+/// reported as 0), canonicalized paths are compared instead. When only the
+/// inode number is trustworthy (`dev_known` is false), only inode numbers
+/// are compared.
 priv struct Handle {
   dev : UInt64
   ino : UInt64
+  dev_known : Bool
   canonical : String?
 }
 
@@ -140,17 +144,27 @@ fn Handle::from_path(path : String) -> Handle raise @sys.IOError {
     {
       dev: 0,
       ino: 0,
+      dev_known: false,
       canonical: (Ok(canonicalize(path)) catch { e => Err(e) }).to_option(),
     }
   } else {
-    { dev: md.dev, ino: md.ino, canonical: None, }
+    { dev: md.dev, ino: md.ino, dev_known: true, canonical: None, }
   }
 }
 
 ///|
+fn Handle::has_ids(self : Handle) -> Bool {
+  self.dev != 0 || self.ino != 0
+}
+
+///|
 fn Handle::same(self : Handle, other : Handle) -> Bool {
-  if (self.dev != 0 || self.ino != 0) && (other.dev != 0 || other.ino != 0) {
-    self.dev == other.dev && self.ino == other.ino
+  if self.has_ids() && other.has_ids() {
+    if self.dev_known && other.dev_known {
+      self.dev == other.dev && self.ino == other.ino
+    } else {
+      self.ino == other.ino
+    }
   } else {
     match (self.canonical, other.canonical) {
       (Some(a), Some(b)) => a == b

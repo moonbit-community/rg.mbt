@@ -162,8 +162,15 @@ pub fn WalkParallel::visit(
   // Reverse the order so that the LIFO processing visits the roots in the
   // order they were given.
   stack.rev_in_place()
+  // Like Rust, a visitor is built for every configured thread (before any
+  // work starts). Since this port is single threaded, all of the work is
+  // then executed by the first one.
+  let visitors = []
+  for _ in 0..<self.threads() {
+    visitors.push(builder.build())
+  }
   let worker : Worker = {
-    visitor: builder.build(),
+    visitor: visitors[0],
     stack,
     quit_now: false,
     max_depth: self.max_depth,
@@ -177,11 +184,15 @@ pub fn WalkParallel::visit(
 }
 
 ///|
-/// Returns the number of threads configured for this walker. (`0` means
-/// "choose automatically".) The traversal itself always runs on a single
-/// thread in this port.
-pub fn WalkParallel::threads(self : WalkParallel) -> Int32 {
-  self.threads
+/// Returns the number of "threads" (visitors) used by this walker. A
+/// configured value of `0` means "choose automatically", which is always `1`
+/// in this port since the traversal itself runs on a single thread.
+fn WalkParallel::threads(self : WalkParallel) -> Int32 {
+  if self.threads <= 0 {
+    1
+  } else {
+    self.threads
+  }
 }
 
 ///|

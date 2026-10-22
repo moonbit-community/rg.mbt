@@ -406,7 +406,8 @@ test "panic walk/panic_in_parallel" {
 }
 
 ///|
-// This should always panic and never hang.
+// This should always panic and never hang. The first call to the visitor
+// builder is used while processing the root paths.
 test "panic walk/panic_in_parallel_builder" {
   let td = TempDir::new("walk-panic_in_parallel_builder")
   wfile(td.join("foo.txt"), "")
@@ -416,7 +417,7 @@ test "panic walk/panic_in_parallel_builder" {
   .build_parallel()
   .run(() => {
     builds += 1
-    if builds == 2 {
+    if builds == 3 {
       abort("builder panic")
     }
     _ => Continue
