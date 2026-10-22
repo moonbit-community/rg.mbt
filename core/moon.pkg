@@ -1,0 +1,7 @@
+import {
+  "dii/rg/cli",
+  "dii/rg/searcher",
+  "moonbitlang/core/encoding/utf8",
+}
+
+warnings = "-implicit_impl_as_method"
