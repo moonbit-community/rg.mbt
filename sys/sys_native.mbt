@@ -414,3 +414,25 @@ pub fn run_command(
     stderr: r[8 + out_len:].to_owned(),
   }
 }
+
+///|
+#borrow(path, out)
+extern "C" fn c_file_times(path : Bytes, out : FixedArray[Int64]) -> Int32 = "moonbit_rgsys_file_times"
+
+///|
+/// Returns the modification, access and creation times of `path`
+/// (following symlinks).
+pub fn file_times(path : String) -> FileTimes raise IOError {
+  let out : FixedArray[Int64] = FixedArray::make(9, 0)
+  if c_file_times(cstr(path), out) < 0 {
+    raise last_error()
+  }
+  let get = (i : Int32) => {
+    if out[i + 2] != 0L {
+      Some(out[i] * 1000000000L + out[i + 1])
+    } else {
+      None
+    }
+  }
+  { modified: get(0), accessed: get(3), created: get(6), }
+}

@@ -1,0 +1,124 @@
+///|
+let json_sherlock : Bytes = b"For the Doctor Watsons of this world, as opposed to the Sherlock\nHolmeses, success in the province of detective work must always\nbe, to a very large extent, the result of luck. Sherlock Holmes\ncan extract a clew from a wisp of straw or a flake of cigar ash;\nbut Doctor Watson has to have it taken out for him and dusted,\nand exhibited clearly, with a label attached.\n"
+
+///|
+/// Splits like Rust's `str::lines` (a trailing newline does not produce
+/// an empty final line).
+fn rust_lines(s : String) -> Array[String] {
+  let out = []
+  let parts : Array[StringView] = s.split("\n").collect()
+  for i, p in parts {
+    if i == parts.length() - 1 && p.is_empty() {
+      break
+    }
+    out.push(p.to_owned())
+  }
+  out
+}
+
+///|
+test "binary_detection" {
+  let binary : Bytes = b"For the Doctor Watsons of this world, as opposed to the Sherlock\nHolmeses, success in the province of detective work must always\nbe, to a very large extent, the result of luck. Sherlock Holmes\ncan extract a clew \x00 from a wisp of straw or a flake of cigar ash;\nbut Doctor Watson has to have it taken out for him and dusted,\nand exhibited clearly, with a label attached."
+  let matcher = @grep_regex.RegexMatcher::new("Watson")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().build(out)
+  @searcher.SearcherBuilder::new()
+  .binary_detection(@searcher.BinaryDetection::BinaryQuit(b'\x00'))
+  .heap_limit(Some(80))
+  .build()
+  .search_reader(matcher, reader(binary), printer.sink(matcher))
+  let got = contents(out)
+  let lines = rust_lines(got)
+  assert_eq(lines.length(), 3)
+  let last = lines[lines.length() - 1]
+  assert_true(last.contains("\"binary_offset\":212,"))
+}
+
+///|
+test "max_matches" {
+  let matcher = @grep_regex.RegexMatcher::new("Watson")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().build(out)
+  @searcher.SearcherBuilder::new()
+  .max_matches(Some(1))
+  .build()
+  .search_reader(matcher, reader(json_sherlock), printer.sink(matcher))
+  let got = contents(out)
+  assert_eq(rust_lines(got).length(), 3)
+}
+
+///|
+test "max_matches_after_context" {
+  let haystack =
+    #|a
+    #|b
+    #|c
+    #|d
+    #|e
+    #|d
+    #|e
+    #|d
+    #|e
+    #|d
+    #|e
+    #|
+  let matcher = @grep_regex.RegexMatcher::new("d")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().build(out)
+  @searcher.SearcherBuilder::new()
+  .after_context(2)
+  .max_matches(Some(1))
+  .build()
+  .search_reader(matcher, reader(str_bytes(haystack)), printer.sink(matcher))
+  let got = contents(out)
+  assert_eq(rust_lines(got).length(), 5)
+}
+
+///|
+test "no_match" {
+  let matcher = @grep_regex.RegexMatcher::new("DOES NOT MATCH")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().build(out)
+  @searcher.SearcherBuilder::new()
+  .build()
+  .search_reader(matcher, reader(json_sherlock), printer.sink(matcher))
+  let got = contents(out)
+  assert_true(got.is_empty())
+}
+
+///|
+test "always_begin_end_no_match" {
+  let matcher = @grep_regex.RegexMatcher::new("DOES NOT MATCH")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().always_begin_end(true).build(out)
+  @searcher.SearcherBuilder::new()
+  .build()
+  .search_reader(matcher, reader(json_sherlock), printer.sink(matcher))
+  let got = contents(out)
+  assert_eq(rust_lines(got).length(), 2)
+  assert_true(got.contains("begin") && got.contains("end"))
+}
+
+///|
+test "missing_crlf" {
+  let haystack = str_bytes("test\r\n")
+  let matcher = @grep_regex.RegexMatcherBuilder::new().build("test")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().build(out)
+  @searcher.SearcherBuilder::new()
+  .build()
+  .search_reader(matcher, reader(haystack), printer.sink(matcher))
+  let got = contents(out)
+  assert_eq(rust_lines(got).length(), 3)
+  assert_true(rust_lines(got)[1].contains("test\\r\\n"))
+  let matcher = @grep_regex.RegexMatcherBuilder::new().crlf(true).build("test")
+  let out = @termcolor.ByteVec::new()
+  let printer = @printer.JSONBuilder::new().build(out)
+  @searcher.SearcherBuilder::new()
+  .line_terminator(@matcher.LineTerminator::crlf())
+  .build()
+  .search_reader(matcher, reader(haystack), printer.sink(matcher))
+  let got = contents(out)
+  assert_eq(rust_lines(got).length(), 3)
+  assert_true(rust_lines(got)[1].contains("test\\r\\n"))
+}

@@ -169,10 +169,29 @@ fn LazyDFA::reset(self : LazyDFA) -> Unit {
   // Quit state (never interned).
   self.states.push(dead)
   for _ in 0..<self.stride {
-    self.trans.push(quit_id)
+    self.trans.push(quit_id * self.stride)
   }
   for i in 0..<self.stride {
-    self.trans[i] = dead_id
+    self.trans[i] = dead_id * self.stride
+  }
+}
+
+///|
+/// Transitions are stored as "tagged premultiplied" state IDs: the state's
+/// index times the stride, with `MATCH_TAG` set for match states. Unknown
+/// transitions are -1.
+const MATCH_TAG : Int32 = 0x40000000
+
+///|
+const ID_MASK : Int32 = 0x3FFFFFFF
+
+///|
+fn LazyDFA::tag(self : LazyDFA, sid : Int32) -> Int32 {
+  let pid = sid * self.stride
+  if self.states[sid].is_match {
+    pid | MATCH_TAG
+  } else {
+    pid
   }
 }
 
@@ -489,7 +508,7 @@ fn LazyDFA::next_state(self : LazyDFA, sid : Int32, unit : Int32) -> Int32 {
   let idx = sid * self.stride + class
   let t = self.trans[idx]
   if t >= 0 {
-    return t
+    return (t & ID_MASK) / self.stride
   }
   if self.states.length() >= self.state_limit {
     self.clear_count += 1
@@ -497,7 +516,7 @@ fn LazyDFA::next_state(self : LazyDFA, sid : Int32, unit : Int32) -> Int32 {
     return -1
   }
   let next = self.compute_next(sid, unit)
-  self.trans[idx] = next
+  self.trans[idx] = self.tag(next)
   next
 }
 
@@ -526,20 +545,57 @@ pub fn LazyDFA::find_fwd(
   }
   let prev = if at > hs { hay[at - 1].to_int() } else { -1 }
   let mut sid = self.start_state(anchored, prev)
-  let mut start_sid = sid
+  let mut start_pid = sid * self.stride
   let mut mat = DFA_NO_MATCH
   let stride = self.stride
   let classes = self.classes
+  let quit_pid = quit_id * stride
+  let has_pre = pre is Some(_)
+  let mut cur = sid * stride
   while at < end {
+    let t = self.trans[cur + classes[hay[at].to_int()]]
+    if t > quit_pid && t < MATCH_TAG {
+      // Fast path: a known, non-special, non-matching state.
+      cur = t
+      at += 1
+      if has_pre && cur == start_pid && mat < 0 {
+        match pre {
+          Some(p) =>
+            match p.find(hay, at, end) {
+              None => return DFA_NO_MATCH
+              Some((s, _)) =>
+                if s > at {
+                  at = s
+                  sid = self.start_state(
+                    false,
+                    if at > hs {
+                      hay[at - 1].to_int()
+                    } else {
+                      -1
+                    },
+                  )
+                  start_pid = sid * stride
+                  cur = start_pid
+                }
+            }
+          None => ()
+        }
+      }
+      continue
+    }
     let b = hay[at].to_int()
-    let t = self.trans[sid * stride + classes[b]]
-    sid = if t >= 0 { t } else { self.next_state(sid, b) }
+    sid = if t >= 0 {
+      (t & ID_MASK) / stride
+    } else {
+      self.next_state(cur / stride, b)
+    }
     if sid <= quit_id {
       if sid == dead_id {
         return mat
       }
       return DFA_FAILED
     }
+    cur = sid * stride
     if self.states[sid].is_match {
       mat = at
       if earliest {
@@ -547,7 +603,7 @@ pub fn LazyDFA::find_fwd(
       }
     }
     at += 1
-    if sid == start_sid && mat < 0 && pre is Some(p) {
+    if cur == start_pid && mat < 0 && pre is Some(p) {
       match p.find(hay, at, end) {
         None => return DFA_NO_MATCH
         Some((s, _)) =>
@@ -561,11 +617,13 @@ pub fn LazyDFA::find_fwd(
                 -1
               },
             )
-            start_sid = sid
+            start_pid = sid * stride
+            cur = start_pid
           }
       }
     }
   }
+  sid = cur / stride
   // End of input transition.
   if end < len {
     sid = self.next_state(sid, hay[end].to_int())
@@ -615,7 +673,7 @@ pub fn LazyDFA::find_rev(
     at -= 1
     let b = hay[at].to_int()
     let t = self.trans[sid * stride + classes[b]]
-    sid = if t >= 0 { t } else { self.next_state(sid, b) }
+    sid = if t >= 0 { (t & ID_MASK) / stride } else { self.next_state(sid, b) }
     if sid <= quit_id {
       if sid == dead_id {
         return mat

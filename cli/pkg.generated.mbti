@@ -1,0 +1,96 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/rg/cli"
+
+import {
+  "dii/rg/sys",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn escape(BytesView) -> String
+
+pub fn hostname() -> String?
+
+pub fn is_readable_stdin() -> Bool
+
+pub fn parse_human_readable_size(String) -> UInt64 raise ParseSizeError
+
+pub fn pattern_from_bytes(BytesView) -> String raise InvalidPatternError
+
+pub fn patterns_from_bytes(Bytes) -> Array[String] raise PatternsError
+
+pub fn patterns_from_path(String) -> Array[String] raise PatternsError
+
+pub fn patterns_from_stdin() -> Array[String] raise PatternsError
+
+pub fn resolve_binary(String) -> String
+
+pub fn unescape(String) -> Bytes
+
+pub fn utf8_valid_up_to(BytesView) -> Int32?
+
+// Errors
+pub suberror CommandError {
+  CommandIo(@sys.IOError)
+  CommandStderr(Bytes)
+  CommandOther(String)
+} derive(@debug.Debug)
+pub fn CommandError::to_string(Self) -> String
+pub impl Show for CommandError
+
+pub suberror InvalidPatternError {
+  InvalidPatternError(original~ : String, valid_up_to~ : Int32)
+} derive(Eq, @debug.Debug)
+pub fn InvalidPatternError::to_string(Self) -> String
+pub fn InvalidPatternError::valid_up_to(Self) -> Int32
+pub impl Show for InvalidPatternError
+
+pub suberror ParseSizeError {
+  InvalidFormat(String)
+  InvalidInt(String, String)
+  Overflow(String)
+} derive(Eq, @debug.Debug)
+pub fn ParseSizeError::to_string(Self) -> String
+pub impl Show for ParseSizeError
+
+pub suberror PatternsError {
+  PatternsError(String)
+} derive(@debug.Debug)
+pub fn PatternsError::to_string(Self) -> String
+pub impl Show for PatternsError
+
+// Types and methods
+pub struct CommandReader {
+  // private fields
+}
+pub fn CommandReader::close(Self) -> Unit raise CommandError
+pub fn CommandReader::new(String, Array[String], stdin_path? : String) -> Self raise CommandError
+pub fn CommandReader::read(Self, FixedArray[Byte], Int32, Int32) -> Int32 raise CommandError
+pub fn CommandReader::read_to_end(Self) -> Bytes raise CommandError
+
+pub struct DecompressionMatcher {
+  // private fields
+}
+pub fn DecompressionMatcher::command(Self, String) -> (String, Array[String])?
+pub fn DecompressionMatcher::has_command(Self, String) -> Bool
+pub fn DecompressionMatcher::new() -> Self
+
+pub struct DecompressionMatcherBuilder {
+  // private fields
+}
+pub fn DecompressionMatcherBuilder::associate(Self, String, String, Array[String]) -> Self
+pub fn DecompressionMatcherBuilder::build(Self) -> DecompressionMatcher raise CommandError
+pub fn DecompressionMatcherBuilder::defaults(Self, Bool) -> Self
+pub fn DecompressionMatcherBuilder::new() -> Self
+
+pub enum DecompressionReader {
+  Command(CommandReader)
+  Passthru(@sys.File)
+}
+pub fn DecompressionReader::close(Self) -> Unit raise CommandError
+pub fn DecompressionReader::new(String, matcher? : DecompressionMatcher) -> Self raise CommandError
+pub fn DecompressionReader::read(Self, FixedArray[Byte], Int32, Int32) -> Int32 raise CommandError
+
+// Type aliases
+
+// Traits

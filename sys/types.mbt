@@ -65,3 +65,12 @@ pub struct File {
 pub fn File::fd(self : File) -> Int32 {
   self.fd
 }
+
+///|
+/// File timestamps, as nanoseconds since the Unix epoch. A field is `None`
+/// if the platform doesn't provide it.
+pub(all) struct FileTimes {
+  modified : Int64?
+  accessed : Int64?
+  created : Int64?
+} derive(Eq, Debug)

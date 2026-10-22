@@ -8,6 +8,9 @@ pub(all) enum Prefilter {
   ByteSet(FixedArray[Bool])
   /// A single literal of length >= 2, with the offset of its rarest byte.
   Memmem(FixedArray[Byte], Int32)
+  /// A single literal of length >= 4, searched with Boyer-Moore-Horspool
+  /// (the payload is the needle and its shift table).
+  Horspool(FixedArray[Byte], FixedArray[Int32])
   /// Several literals, bucketed by their first byte in priority order.
   Multi(FixedArray[Bool], Array[Array[FixedArray[Byte]]], Int32)
 }
@@ -23,6 +26,15 @@ pub fn Prefilter::new(lits : Array[Bytes]) -> Prefilter? {
     let lit = lits[0]
     if lit.length() == 1 {
       return Some(Byte(lit[0].to_int()))
+    }
+    if lit.length() >= 4 {
+      let needle = lit.to_fixedarray()
+      let n = needle.length()
+      let shift = FixedArray::make(256, n)
+      for i in 0..<(n - 1) {
+        shift[needle[i].to_int()] = n - 1 - i
+      }
+      return Some(Horspool(needle, shift))
     }
     let mut rare = 0
     for i in 1..<lit.length() {
@@ -67,7 +79,7 @@ pub fn Prefilter::is_fast(self : Prefilter) -> Bool {
       }
       n <= 3
     }
-    Memmem(_, _) => true
+    Memmem(_, _) | Horspool(_, _) => true
     Multi(set, _, _) => {
       let mut n = 0
       for i in 0..<256 {
@@ -156,6 +168,26 @@ pub fn Prefilter::find(
           }
         }
         i += 1
+      }
+      None
+    }
+    Horspool(needle, shift) => {
+      let n = needle.length()
+      let last_byte = needle[n - 1]
+      let mut i = start
+      let limit = end - n
+      while i <= limit {
+        let b = hay[i + n - 1]
+        if b == last_byte {
+          let mut j = 0
+          while j < n - 1 && hay[i + j] == needle[j] {
+            j += 1
+          }
+          if j == n - 1 {
+            return Some((i, i + n))
+          }
+        }
+        i += shift[b.to_int()]
       }
       None
     }

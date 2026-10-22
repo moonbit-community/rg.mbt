@@ -1,5 +1,11 @@
 import {
+  "dii/rg/globset",
+  "dii/rg/sys",
   "moonbitlang/core/encoding/utf8",
 }
 
 warnings = "-implicit_impl_as_method"
+
+import {
+  "dii/rg/sys",
+} for "test"

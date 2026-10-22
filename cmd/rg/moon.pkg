@@ -1,0 +1,12 @@
+import {
+  "dii/rg/core",
+  "dii/rg/sys",
+}
+
+supported_targets = "native+wasm"
+
+pkgtype(kind: "executable")
+
+options(
+  link: { "wasm": { "export-memory-name": "memory" } },
+)
