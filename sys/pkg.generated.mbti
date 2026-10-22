@@ -1,0 +1,120 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/rg/sys"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn args() -> Array[String]
+
+pub fn create_dir_all(String) -> Unit raise IOError
+
+pub fn current_dir() -> String?
+
+pub fn env_var(String) -> String?
+
+pub fn env_vars() -> Array[(String, String)]
+
+pub fn exit(Int32) -> Unit
+
+pub fn hostname() -> String?
+
+pub fn is_tty(Int32) -> Bool
+
+pub fn is_windows() -> Bool
+
+pub fn metadata(String) -> Metadata raise IOError
+
+pub fn now_nanos() -> Int64
+
+pub fn path_exists(String) -> Bool
+
+pub fn read_dir(String) -> Array[DirEntry] raise IOError
+
+pub fn read_fd(Int32, FixedArray[Byte], Int32, Int32) -> Int32 raise IOError
+
+pub fn read_file(String) -> Bytes raise IOError
+
+pub fn read_link(String) -> String raise IOError
+
+pub fn remove_dir_all(String) -> Unit raise IOError
+
+pub fn remove_file(String) -> Unit raise IOError
+
+pub fn run_command(String, Array[String], stdin_path? : String) -> ProcessOutput raise IOError
+
+pub fn stdin_is_readable() -> Bool
+
+pub fn symlink(String, String) -> Unit raise IOError
+
+pub fn symlink_metadata(String) -> Metadata raise IOError
+
+pub fn write_fd(Int32, FixedArray[Byte], Int32, Int32) -> Unit raise IOError
+
+pub fn write_file(String, Bytes) -> Unit raise IOError
+
+// Errors
+pub suberror IOError {
+  IOError(kind~ : IOErrorKind, code~ : Int32, message~ : String)
+} derive(@debug.Debug)
+pub fn IOError::code(Self) -> Int32
+pub fn IOError::from_errno(Int32) -> Self
+pub fn IOError::kind(Self) -> IOErrorKind
+pub fn IOError::message(Self) -> String
+pub fn IOError::other(IOErrorKind, String) -> Self
+pub impl Show for IOError
+
+// Types and methods
+pub(all) struct DirEntry {
+  name : String
+  file_type : FileType?
+} derive(Eq, @debug.Debug)
+
+pub struct File {
+  // private fields
+}
+pub fn File::close(Self) -> Unit
+pub fn File::fd(Self) -> Int32
+pub fn File::open(String) -> Self raise IOError
+pub fn File::read(Self, FixedArray[Byte], Int32, Int32) -> Int32 raise IOError
+
+pub(all) enum FileType {
+  File
+  Dir
+  Symlink
+  Other
+} derive(Eq, @debug.Debug)
+
+pub(all) enum IOErrorKind {
+  NotFound
+  PermissionDenied
+  AlreadyExists
+  InvalidInput
+  Interrupted
+  BrokenPipe
+  IsADirectory
+  NotADirectory
+  Unsupported
+  Other
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Metadata {
+  file_type : FileType
+  len : Int64
+  dev : UInt64
+  ino : UInt64
+} derive(Eq, @debug.Debug)
+pub fn Metadata::is_dir(Self) -> Bool
+pub fn Metadata::is_file(Self) -> Bool
+pub fn Metadata::is_symlink(Self) -> Bool
+
+pub(all) struct ProcessOutput {
+  status : Int32
+  stdout : Bytes
+  stderr : Bytes
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

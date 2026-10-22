@@ -1,0 +1,14 @@
+import {
+  "dii/rg/sys",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "native+wasm"
+
+// Executables using `dii/rg/sys` on the wasm backend must export their
+// memory as `memory` so that WASI runners (wasmtime, moonrun) can access it.
+pkgtype(kind: "executable")
+
+options(
+  link: { "wasm": { "export-memory-name": "memory" } },
+)
