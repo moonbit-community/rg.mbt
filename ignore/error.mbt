@@ -280,7 +280,7 @@ pub fn[T] Match::invert(self : Match[T]) -> Match[T] {
 /// Return the value inside this match if it exists.
 pub fn[T] Match::inner(self : Match[T]) -> T? {
   match self {
-    None => Option::None
+    None => None
     Ignore(t) | Whitelist(t) => Some(t)
   }
 }

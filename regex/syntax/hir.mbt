@@ -519,7 +519,7 @@ pub fn Hir::alternation(subs : Array[Hir]) -> Hir {
     return Hir::class(Class::new_bytes(bytes))
   }
   // All classes, as Unicode.
-  let mut ucls : Class? = Some(Class::Unicode([]))
+  let mut ucls : Class? = Some(Unicode([]))
   for h in new {
     match (h.kind, ucls) {
       (Class(c), Some(acc)) =>
@@ -533,7 +533,7 @@ pub fn Hir::alternation(subs : Array[Hir]) -> Hir {
   if ucls is Some(c) {
     return Hir::class(c)
   }
-  let mut bcls : Class? = Some(Class::Bytes([]))
+  let mut bcls : Class? = Some(Bytes([]))
   for h in new {
     match (h.kind, bcls) {
       (Class(c), Some(acc)) =>

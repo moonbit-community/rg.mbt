@@ -39,7 +39,7 @@ fn strip_from_match_ascii(
       }
       let remove = match cls {
         Unicode(_) => @syntax.Class::Unicode([(byte.to_int(), byte.to_int())])
-        Bytes(_) => @syntax.Class::Bytes([(byte.to_int(), byte.to_int())])
+        Bytes(_) => Bytes([(byte.to_int(), byte.to_int())])
       }
       let cls = cls.difference(remove)
       if cls.is_empty() {

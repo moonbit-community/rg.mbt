@@ -29,7 +29,7 @@ test "rg_compat_color_basic" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -59,7 +59,7 @@ test "rg_compat_color_no_line_number" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(false)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -90,7 +90,7 @@ test "rg_compat_color_heading" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -120,7 +120,7 @@ test "rg_compat_color_context" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -153,7 +153,7 @@ test "rg_compat_color_context_heading" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -187,7 +187,7 @@ test "rg_compat_color_column_byte_offset" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -218,7 +218,7 @@ test "rg_compat_color_only_matching" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -250,7 +250,7 @@ test "rg_compat_color_vimgrep" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -281,7 +281,7 @@ test "rg_compat_color_replace" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -313,7 +313,7 @@ test "rg_compat_color_replace_only_matching" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -343,7 +343,7 @@ test "rg_compat_color_multiline" {
   @searcher.SearcherBuilder::new()
   .line_number(true)
   .multi_line(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -373,7 +373,7 @@ test "rg_compat_color_multiline_context" {
   @searcher.SearcherBuilder::new()
   .line_number(true)
   .multi_line(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -406,7 +406,7 @@ test "rg_compat_color_multiline_only_matching" {
   @searcher.SearcherBuilder::new()
   .line_number(true)
   .multi_line(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -438,7 +438,7 @@ test "rg_compat_color_multiline_vimgrep" {
   @searcher.SearcherBuilder::new()
   .line_number(true)
   .multi_line(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -469,7 +469,7 @@ test "rg_compat_color_max_columns" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -501,7 +501,7 @@ test "rg_compat_color_max_columns_preview" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -533,7 +533,7 @@ test "rg_compat_graphemes_max_columns_preview" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -577,7 +577,7 @@ test "rg_compat_custom_colors" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -615,7 +615,7 @@ test "rg_compat_colors_none" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -648,7 +648,7 @@ test "rg_compat_trim" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -680,7 +680,7 @@ test "rg_compat_trim_only_matching" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -710,7 +710,7 @@ test "rg_compat_invert" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .invert_match(true)
   .build()
   .search_reader(
@@ -741,7 +741,7 @@ test "rg_compat_invert_context" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .invert_match(true)
   .before_context(1)
   .after_context(1)
@@ -777,7 +777,7 @@ test "rg_compat_separators" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -810,7 +810,7 @@ test "rg_compat_null_terminator" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -842,7 +842,7 @@ test "rg_compat_null_terminator_heading" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -873,7 +873,7 @@ test "rg_compat_path_separator" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -903,7 +903,7 @@ test "rg_compat_binary_convert" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -933,7 +933,7 @@ test "rg_compat_binary_convert_first" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -962,7 +962,7 @@ test "rg_compat_latin1_no_color" {
     .build(@termcolor.NoColor::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -997,7 +997,7 @@ test "rg_compat_hyperlink_vscode" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1032,7 +1032,7 @@ test "rg_compat_hyperlink_heading_file" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1067,7 +1067,7 @@ test "rg_compat_hyperlink_heading_kitty" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1101,7 +1101,7 @@ test "rg_compat_hyperlink_context" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -1133,7 +1133,7 @@ test "rg_compat_passthru" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .passthru(true)
   .build()
   .search_reader(
@@ -1164,7 +1164,7 @@ test "rg_compat_max_count_after" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .max_matches(Some(1))
   .after_context(2)
   .build()
@@ -1197,7 +1197,7 @@ test "rg_compat_crlf" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .line_terminator(@matcher.LineTerminator::crlf())
   .build()
   .search_reader(
@@ -1230,7 +1230,7 @@ test "rg_compat_crlf_only_matching" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .line_terminator(@matcher.LineTerminator::crlf())
   .build()
   .search_reader(
@@ -1263,7 +1263,7 @@ test "rg_compat_byte_offset_only_matching" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1294,7 +1294,7 @@ test "rg_compat_column_context" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -1327,7 +1327,7 @@ test "rg_compat_max_columns_context" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -1362,7 +1362,7 @@ test "rg_compat_max_columns_only_matching_preview" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1394,7 +1394,7 @@ test "rg_compat_max_columns_preview_context" {
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -1428,7 +1428,7 @@ test "rg_compat_multiline_max_columns_preview" {
   @searcher.SearcherBuilder::new()
   .line_number(true)
   .multi_line(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1457,7 +1457,7 @@ test "rg_compat_multiline_no_color" {
   @searcher.SearcherBuilder::new()
   .line_number(true)
   .multi_line(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1489,7 +1489,7 @@ test "rg_compat_multiline_heading" {
   @searcher.SearcherBuilder::new()
   .line_number(true)
   .multi_line(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1514,12 +1514,12 @@ test "rg_compat_summary_count" {
   let out = @termcolor.ByteVec::new()
   let printer = @printer.SummaryBuilder::new()
     .color_specs(@printer.ColorSpecs::default_with_color())
-    .kind(@printer.SummaryKind::Count)
+    .kind(Count)
     .path(true)
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(false)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1541,12 +1541,12 @@ test "rg_compat_summary_count_matches" {
   let out = @termcolor.ByteVec::new()
   let printer = @printer.SummaryBuilder::new()
     .color_specs(@printer.ColorSpecs::default_with_color())
-    .kind(@printer.SummaryKind::CountMatches)
+    .kind(CountMatches)
     .path(true)
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(false)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1568,12 +1568,12 @@ test "rg_compat_summary_files_with_matches" {
   let out = @termcolor.ByteVec::new()
   let printer = @printer.SummaryBuilder::new()
     .color_specs(@printer.ColorSpecs::default_with_color())
-    .kind(@printer.SummaryKind::PathWithMatch)
+    .kind(PathWithMatch)
     .path(false)
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(false)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1595,13 +1595,13 @@ test "rg_compat_summary_files_with_matches_null" {
   let out = @termcolor.ByteVec::new()
   let printer = @printer.SummaryBuilder::new()
     .color_specs(@printer.ColorSpecs::default_with_color())
-    .kind(@printer.SummaryKind::PathWithMatch)
+    .kind(PathWithMatch)
     .path(false)
     .path_terminator(Some(b'\x00'))
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(false)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1623,12 +1623,12 @@ test "rg_compat_summary_files_without_match" {
   let out = @termcolor.ByteVec::new()
   let printer = @printer.SummaryBuilder::new()
     .color_specs(@printer.ColorSpecs::default_with_color())
-    .kind(@printer.SummaryKind::PathWithoutMatch)
+    .kind(PathWithoutMatch)
     .path(false)
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(false)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1653,13 +1653,13 @@ test "rg_compat_summary_count_hyperlink" {
   let out = @termcolor.ByteVec::new()
   let printer = @printer.SummaryBuilder::new()
     .color_specs(@printer.ColorSpecs::default_with_color())
-    .kind(@printer.SummaryKind::Count)
+    .kind(Count)
     .path(true)
     .hyperlink(@printer.HyperlinkFormat::parse("vscode").into_config(env))
     .build(@termcolor.Ansi::new(out))
   @searcher.SearcherBuilder::new()
   .line_number(false)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1731,7 +1731,7 @@ test "rg_compat_json_basic" {
   let printer = @printer.JSONBuilder::new().build(out)
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1757,7 +1757,7 @@ test "rg_compat_json_pretty_context" {
   let printer = @printer.JSONBuilder::new().pretty(true).build(out)
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -1785,7 +1785,7 @@ test "rg_compat_json_pretty_non_utf8" {
   let printer = @printer.JSONBuilder::new().pretty(true).build(out)
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1811,7 +1811,7 @@ test "rg_compat_json_context" {
   let printer = @printer.JSONBuilder::new().build(out)
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .before_context(1)
   .after_context(1)
   .build()
@@ -1841,7 +1841,7 @@ test "rg_compat_json_replace" {
     .build(out)
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1867,7 +1867,7 @@ test "rg_compat_json_invert" {
   let printer = @printer.JSONBuilder::new().build(out)
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .invert_match(true)
   .build()
   .search_reader(
@@ -1894,7 +1894,7 @@ test "rg_compat_json_non_utf8" {
   let printer = @printer.JSONBuilder::new().build(out)
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1920,7 +1920,7 @@ test "rg_compat_json_binary" {
   let printer = @printer.JSONBuilder::new().build(out)
   @searcher.SearcherBuilder::new()
   .line_number(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,
@@ -1946,7 +1946,7 @@ test "rg_compat_json_multiline" {
   @searcher.SearcherBuilder::new()
   .line_number(true)
   .multi_line(true)
-  .binary_detection(@searcher.BinaryDetection::BinaryConvert(b'\x00'))
+  .binary_detection(BinaryConvert(b'\x00'))
   .build()
   .search_reader(
     matcher,

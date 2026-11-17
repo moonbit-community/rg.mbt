@@ -279,7 +279,7 @@ pub fn WalkBuilder::build(self : WalkBuilder) -> Walk {
   let sorter = self.sorter
   let its : Array[(String, WalkEventIter?)] = self.paths.map(p => {
     if p == "-" {
-      (p, Option::None)
+      (p, None)
     } else {
       let cmp : ((RawEntry, RawEntry) -> Int32)? = match sorter {
         None => None

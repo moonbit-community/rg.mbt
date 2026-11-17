@@ -23,7 +23,7 @@ test "binary_detection" {
   let out = @termcolor.ByteVec::new()
   let printer = @printer.JSONBuilder::new().build(out)
   @searcher.SearcherBuilder::new()
-  .binary_detection(@searcher.BinaryDetection::BinaryQuit(b'\x00'))
+  .binary_detection(BinaryQuit(b'\x00'))
   .heap_limit(Some(80))
   .build()
   .search_reader(matcher, reader(binary), printer.sink(matcher))

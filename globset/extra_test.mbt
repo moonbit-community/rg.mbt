@@ -31,7 +31,7 @@ test "error display" {
   inspect(glob_error("a\\"), content="error parsing glob 'a\\': dangling '\\'")
   let err = glob_error("[z-a]")
   assert_eq(err.glob(), Some("[z-a]"))
-  assert_eq(err.kind(), @globset.InvalidRange('z', 'a'))
+  assert_eq(err.kind(), InvalidRange('z', 'a'))
 }
 
 ///|
