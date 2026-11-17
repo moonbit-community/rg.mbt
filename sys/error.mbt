@@ -1,6 +1,7 @@
 ///|
 /// A coarse classification of I/O errors, modeled after Rust's
 /// `std::io::ErrorKind`.
+#derive(Eq, Debug)
 pub(all) enum IOErrorKind {
   NotFound
   PermissionDenied
@@ -12,7 +13,7 @@ pub(all) enum IOErrorKind {
   NotADirectory
   Unsupported
   Other
-} derive(Eq, Debug)
+}
 
 ///|
 /// An I/O error, modeled after Rust's `std::io::Error`.
@@ -20,9 +21,10 @@ pub(all) enum IOErrorKind {
 /// `code` is the errno number displayed for OS errors (the host's number on
 /// native, a Linux-style number on wasm), or `-1` for errors that do not
 /// originate from the operating system.
+#derive(Debug)
 pub suberror IOError {
   IOError(kind~ : IOErrorKind, code~ : Int32, message~ : String)
-} derive(Debug)
+}
 
 ///|
 /// Renders like Rust's `io::Error` `Display`:

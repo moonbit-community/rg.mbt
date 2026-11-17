@@ -516,7 +516,7 @@ fn Translator::class_literal_byte(
 ///|
 fn Translator::empty_class(self : Translator) -> Class {
   if self.unicode() {
-    Class::Unicode([])
+    Unicode([])
   } else {
     Bytes([])
   }

@@ -197,16 +197,16 @@ pub fn GlobSet::new(globs : ArrayView[Glob]) -> GlobSet raise GlobError {
     strats.push(GlobSetMatchStrategy::Extension(exts))
   }
   if !base_lits.is_empty() {
-    strats.push(GlobSetMatchStrategy::BasenameLiteral(base_lits))
+    strats.push(BasenameLiteral(base_lits))
   }
   if !lits.is_empty() {
-    strats.push(GlobSetMatchStrategy::Literal(lits))
+    strats.push(Literal(lits))
   }
   if !suffixes.is_empty() {
-    strats.push(GlobSetMatchStrategy::Suffix(suffixes.affix()))
+    strats.push(Suffix(suffixes.affix()))
   }
   if !prefixes.is_empty() {
-    strats.push(GlobSetMatchStrategy::Prefix(prefixes.affix()))
+    strats.push(Prefix(prefixes.affix()))
   }
   if !required_exts.is_empty() {
     let compiled : Map[Bytes, Array[(Int32, @regex.Regex)]] = Map([])
@@ -218,10 +218,10 @@ pub fn GlobSet::new(globs : ArrayView[Glob]) -> GlobSet raise GlobError {
       }
       compiled[ext] = res
     }
-    strats.push(GlobSetMatchStrategy::RequiredExtension(compiled))
+    strats.push(RequiredExtension(compiled))
   }
   if !regexes.is_empty() {
-    strats.push(GlobSetMatchStrategy::Regex(regexes.regex_set()))
+    strats.push(Regex(regexes.regex_set()))
   }
   { len, strats, }
 }
@@ -229,9 +229,10 @@ pub fn GlobSet::new(globs : ArrayView[Glob]) -> GlobSet raise GlobError {
 ///|
 /// GlobSetBuilder builds a group of patterns that can be used to
 /// simultaneously match a file path.
+#derive(Debug)
 pub struct GlobSetBuilder {
   priv pats : Array[Glob]
-} derive(Debug)
+}
 
 ///|
 /// Create a new `GlobSetBuilder`. A `GlobSetBuilder` can be used to add new

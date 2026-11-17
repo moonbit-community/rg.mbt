@@ -149,7 +149,7 @@ test "error display" {
   inspect(@sys.IOError::from_errno(20), content="Not a directory (os error 20)")
   // The message comes from the host's libc ("Unknown error 9999" with glibc,
   // "Unknown error: 9999" on macOS).
-  let unknown = @sys.IOError::from_errno(9999).to_string()
+  let unknown = Show::to_string(@sys.IOError::from_errno(9999))
   assert_true(unknown.has_prefix("Unknown error"))
   assert_true(unknown.has_suffix("9999 (os error 9999)"))
   debug_inspect(@sys.IOError::from_errno(13).kind(), content="PermissionDenied")

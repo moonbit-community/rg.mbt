@@ -1,5 +1,6 @@
 ///|
 /// An error from running a command.
+#derive(Debug)
 pub suberror CommandError {
   /// An I/O error (e.g. the command could not be spawned).
   CommandIo(@sys.IOError)
@@ -7,12 +8,12 @@ pub suberror CommandError {
   CommandStderr(Bytes)
   /// Some other error message.
   CommandOther(String)
-} derive(Debug)
+}
 
 ///|
 pub fn CommandError::to_string(self : CommandError) -> String {
   match self {
-    CommandIo(e) => e.to_string()
+    CommandIo(e) => Show::to_string(e)
     CommandOther(s) => s
     CommandStderr(bytes) => {
       let msg = @utf8.decode_lossy(bytes)

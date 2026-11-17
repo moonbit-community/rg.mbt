@@ -378,7 +378,7 @@ fn SearchWorker::search_input(
 fn error_message(e : Error) -> String {
   match e {
     RgError(msg) => msg
-    @sys.IOError(..) as e => e.to_string()
+    @sys.IOError(..) as e => Show::to_string(e)
     @searcher.ConfigError(_) as e => e.to_string()
     @searcher.SearchIOError(_) as e => e.to_string()
     @cli.CommandIo(_) as e => e.to_string()

@@ -8,6 +8,7 @@
 /// WalkState is used in the parallel recursive directory iterator to
 /// indicate whether walking should continue as normal, skip descending into
 /// a particular directory or quit the walk entirely.
+#derive(Eq, Debug)
 pub(all) enum WalkState {
   /// Continue walking as normal.
   Continue
@@ -16,7 +17,7 @@ pub(all) enum WalkState {
   Skip
   /// Quit the entire iterator as soon as possible.
   Quit
-} derive(Eq, Debug)
+}
 
 ///|
 fn WalkState::is_continue(self : WalkState) -> Bool {

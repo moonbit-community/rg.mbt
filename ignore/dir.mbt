@@ -460,7 +460,7 @@ fn Ignore::matched(
 
 ///|
 fn gi_match(gi : Gitignore, path : String, is_dir : Bool) -> Match[IgnoreMatch] {
-  gi.matched(path, is_dir).map(x => IgnoreMatch::Gitignore(x))
+  gi.matched(path, is_dir).map(x => Gitignore(x))
 }
 
 ///|

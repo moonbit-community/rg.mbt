@@ -1,5 +1,6 @@
 ///|
 /// Configuration for building a regex matcher.
+#derive(Debug)
 pub(all) struct Config {
   case_insensitive : Bool
   case_smart : Bool
@@ -18,7 +19,7 @@ pub(all) struct Config {
   word : Bool
   fixed_strings : Bool
   whole_line : Bool
-} derive(Debug)
+}
 
 ///|
 pub fn Config::default() -> Config {

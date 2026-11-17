@@ -2,12 +2,13 @@
 // operating on `String` paths with `/` separators.
 
 ///|
+#derive(Eq)
 priv enum PathComp {
   Root
   CurDir
   ParentDir
   Normal(String)
-} derive(Eq)
+}
 
 ///|
 /// Splits a path into components, like Rust's `Path::components`. Each

@@ -69,7 +69,7 @@ test "reports_binary" {
   let sink = printer.sink(matcher)
   @searcher.SearcherBuilder::new()
   .line_number(false)
-  .binary_detection(@searcher.BinaryDetection::BinaryQuit(b'\x00'))
+  .binary_detection(BinaryQuit(b'\x00'))
   .build()
   .search_reader(matcher, reader(b"abc\x00"), sink)
   assert_eq(sink.binary_byte_offset(), Some(3))

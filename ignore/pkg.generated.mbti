@@ -12,6 +12,7 @@ pub fn compare_utf8(String, String) -> Int32
 pub fn gitconfig_excludes_path() -> String?
 
 // Errors
+#derive(@debug.Debug)
 pub(all) suberror IgnoreError {
   Partial(Array[IgnoreError])
   WithLineNumber(line~ : Int32, err~ : IgnoreError)
@@ -22,7 +23,7 @@ pub(all) suberror IgnoreError {
   Glob(glob~ : String?, err~ : String)
   UnrecognizedFileType(String)
   InvalidDefinition
-} derive(@debug.Debug)
+}
 pub fn IgnoreError::depth(Self) -> Int32?
 pub fn IgnoreError::into_io_error(Self) -> @sys.IOError?
 pub fn IgnoreError::io_error(Self) -> @sys.IOError?
@@ -47,9 +48,10 @@ pub fn DirEntry::path(Self) -> String
 pub fn DirEntry::path_is_symlink(Self) -> Bool
 pub impl @debug.Debug for DirEntry
 
+#derive(Eq, @debug.Debug)
 pub struct FileTypeDef {
   // private fields
-} derive(Eq, @debug.Debug)
+}
 pub fn FileTypeDef::globs(Self) -> ArrayView[String]
 pub fn FileTypeDef::name(Self) -> String
 
@@ -80,20 +82,22 @@ pub fn GitignoreBuilder::build_global(Self) -> (Gitignore, IgnoreError?)
 pub fn GitignoreBuilder::case_insensitive(Self, Bool) -> Self
 pub fn GitignoreBuilder::new(String) -> Self
 
+#derive(Eq, @debug.Debug)
 pub struct GitignoreGlob {
   // private fields
-} derive(Eq, @debug.Debug)
+}
 pub fn GitignoreGlob::actual(Self) -> String
 pub fn GitignoreGlob::from(Self) -> String?
 pub fn GitignoreGlob::is_only_dir(Self) -> Bool
 pub fn GitignoreGlob::is_whitelist(Self) -> Bool
 pub fn GitignoreGlob::original(Self) -> String
 
+#derive(@debug.Debug)
 pub(all) enum Match[T] {
   None
   Ignore(T)
   Whitelist(T)
-} derive(@debug.Debug)
+}
 pub fn[T] Match::inner(Self[T]) -> T?
 pub fn[T] Match::invert(Self[T]) -> Self[T]
 pub fn[T] Match::is_ignore(Self[T]) -> Bool
@@ -102,9 +106,10 @@ pub fn[T] Match::is_whitelist(Self[T]) -> Bool
 pub fn[T, U] Match::map(Self[T], (T) -> U) -> Self[U]
 pub fn[T] Match::or(Self[T], Self[T]) -> Self[T]
 
+#derive(@debug.Debug)
 pub struct Override {
   // private fields
-} derive(@debug.Debug)
+}
 pub fn Override::empty() -> Self
 pub fn Override::is_empty(Self) -> Bool
 pub fn Override::matched(Self, String, Bool) -> Match[OverrideGlob]
@@ -121,10 +126,11 @@ pub fn OverrideBuilder::build(Self) -> Override raise IgnoreError
 pub fn OverrideBuilder::case_insensitive(Self, Bool) -> Self
 pub fn OverrideBuilder::new(String) -> Self
 
+#derive(@debug.Debug)
 pub(all) enum OverrideGlob {
   UnmatchedIgnore
   Matched(GitignoreGlob)
-} derive(@debug.Debug)
+}
 
 pub struct Types {
   // private fields
@@ -149,10 +155,11 @@ pub fn TypesBuilder::negate(Self, String) -> Self
 pub fn TypesBuilder::new() -> Self
 pub fn TypesBuilder::select(Self, String) -> Self
 
+#derive(@debug.Debug)
 pub(all) enum TypesGlob {
   UnmatchedIgnore
   Matched(def~ : FileTypeDef)
-} derive(@debug.Debug)
+}
 pub fn TypesGlob::file_type_def(Self) -> FileTypeDef?
 
 pub struct Walk {
@@ -203,11 +210,12 @@ pub struct WalkParallel {
 pub fn WalkParallel::run(Self, () -> (Result[DirEntry, IgnoreError]) -> WalkState) -> Unit
 pub fn WalkParallel::visit(Self, &ParallelVisitorBuilder) -> Unit
 
+#derive(Eq, @debug.Debug)
 pub(all) enum WalkState {
   Continue
   Skip
   Quit
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 
