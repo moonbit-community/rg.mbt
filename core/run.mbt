@@ -102,7 +102,7 @@ pub fn run_main(cli_args : Array[String]) -> Int32 {
       if kind is BrokenPipe {
         Ok(0)
       } else {
-        Err(e.to_string())
+        Err(Show::to_string(e))
       }
     e => Err("\{e}")
   } noraise {

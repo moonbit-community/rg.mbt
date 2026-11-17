@@ -12,7 +12,7 @@ pub suberror CommandError {
 ///|
 pub fn CommandError::to_string(self : CommandError) -> String {
   match self {
-    CommandIo(e) => e.to_string()
+    CommandIo(e) => Show::to_string(e)
     CommandOther(s) => s
     CommandStderr(bytes) => {
       let msg = @utf8.decode_lossy(bytes)
