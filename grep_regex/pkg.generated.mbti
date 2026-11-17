@@ -10,14 +10,16 @@ import {
 // Values
 
 // Errors
+#derive(@debug.Debug)
 pub suberror GrepRegexError {
   GrepRegexError(GrepRegexErrorKind)
-} derive(@debug.Debug)
+}
 pub fn GrepRegexError::kind(Self) -> GrepRegexErrorKind
 pub fn GrepRegexError::to_string(Self) -> String
 pub impl Show for GrepRegexError
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) struct Config {
   case_insensitive : Bool
   case_smart : Bool
@@ -36,15 +38,16 @@ pub(all) struct Config {
   word : Bool
   fixed_strings : Bool
   whole_line : Bool
-} derive(@debug.Debug)
+}
 pub fn Config::default() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum GrepRegexErrorKind {
   Regex(String)
   NotAllowed(String)
   InvalidLineTerminator(Byte)
   Banned(Byte)
-} derive(Eq, @debug.Debug)
+}
 
 pub struct RegexMatcher {
   // private fields

@@ -76,36 +76,42 @@ pub fn set_ignore_messages(Bool) -> Unit
 pub fn set_messages(Bool) -> Unit
 
 // Errors
+#derive(@debug.Debug)
 pub suberror RgError {
   RgError(String)
-} derive(@debug.Debug)
+}
 pub fn RgError::message(Self) -> String
 pub impl Show for RgError
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum BinaryMode {
   Auto
   SearchAndSuppress
   AsText
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum BoundaryMode {
   Line
   Word
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum BufferMode {
   Auto
   Line
   Block
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum CaseMode {
   Sensitive
   Insensitive
   Smart
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum Category {
   Input
   Search
@@ -115,35 +121,39 @@ pub(all) enum Category {
   Indexing
   Logging
   OtherBehaviors
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn Category::as_str(Self) -> String
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ColorChoice {
   Never
   Auto
   Always
   Ansi
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum CompletionType {
   Other
   Filename
   Executable
   Filetype
   Encoding
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ContextMode {
   Passthru
   Limited(ContextModeLimited)
-} derive(Eq, @debug.Debug)
+}
 pub fn ContextMode::default() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ContextModeLimited {
   before : Int32?
   after : Int32?
   both : Int32?
-} derive(Eq, @debug.Debug)
+}
 pub fn ContextModeLimited::get(Self) -> (Int32, Int32)
 
 pub(all) enum EncodingMode {
@@ -154,11 +164,12 @@ pub(all) enum EncodingMode {
 pub impl Eq for EncodingMode
 pub impl @debug.Debug for EncodingMode
 
+#derive(Eq, @debug.Debug)
 pub(all) enum EngineChoice {
   Default
   Auto
   PCRE2
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct FlagDef {
   is_switch : Bool
@@ -174,18 +185,20 @@ pub(all) struct FlagDef {
   completion_type : CompletionType
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum FlagValue {
   Switch(Bool)
   Value(String)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum GenerateMode {
   Man
   CompleteBash
   CompleteZsh
   CompleteFish
   CompletePowerShell
-} derive(Eq, @debug.Debug)
+}
 
 pub struct Haystack {
   // private fields
@@ -211,14 +224,16 @@ pub fn HiArgs::stdout(Self) -> &@termcolor.WriteColor
 pub fn HiArgs::threads(Self) -> Int32
 pub fn HiArgs::types(Self) -> @ignore.Types
 
+#derive(Eq, @debug.Debug)
 pub(all) enum IndexMode {
   Crud
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum LoggingMode {
   Debug
   Trace
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct LowArgs {
   mut special : SpecialMode?
@@ -301,19 +316,21 @@ pub(all) struct LowArgs {
 }
 pub fn LowArgs::default() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum MmapMode {
   Auto
   AlwaysTryMmap
   Never
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Mode {
   Search(SearchMode)
   Index(IndexMode)
   Files
   Types
   Generate(GenerateMode)
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) enum ParseResult[T] {
   Special(SpecialMode)
@@ -321,10 +338,11 @@ pub(all) enum ParseResult[T] {
   ParseErr(String)
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum PatternSource {
   Regexp(String)
   File(String)
-} derive(Eq, @debug.Debug)
+}
 
 pub enum Printer {
   Standard(@printer.Standard)
@@ -333,6 +351,7 @@ pub enum Printer {
 }
 pub fn Printer::get_mut(Self) -> &@termcolor.WriteColor
 
+#derive(Eq, @debug.Debug)
 pub(all) enum SearchMode {
   Standard
   FilesWithMatches
@@ -340,27 +359,30 @@ pub(all) enum SearchMode {
   Count
   CountMatches
   JSON
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct SortMode {
   reverse : Bool
   kind : SortModeKind
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum SortModeKind {
   Path
   LastModified
   LastAccessed
   Created
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum SpecialMode {
   HelpShort
   HelpLong
   VersionShort
   VersionLong
   VersionPCRE2
-} derive(Eq, @debug.Debug)
+}
 
 pub struct StdoutWriter {
   // private fields
@@ -368,12 +390,13 @@ pub struct StdoutWriter {
 pub fn StdoutWriter::new(Int32, Bool) -> Self
 pub impl @termcolor.Write for StdoutWriter
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TypeChange {
   Clear(String)
   Add(String)
   Select(String)
   Negate(String)
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

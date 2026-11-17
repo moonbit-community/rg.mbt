@@ -26,19 +26,21 @@ pub fn slice_has_bom(FixedArray[Byte], Int32, Int32) -> Bool
 pub fn without_terminator(FixedArray[Byte], Int32, Int32, @matcher.LineTerminator) -> Int32
 
 // Errors
+#derive(@debug.Debug)
 pub suberror SearchError {
   ConfigError(String)
   SearchIOError(String)
-} derive(@debug.Debug)
+}
 pub fn SearchError::to_string(Self) -> String
 pub impl Show for SearchError
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum BinaryDetection {
   BinaryNone
   BinaryQuit(Byte)
   BinaryConvert(Byte)
-} derive(Eq, @debug.Debug)
+}
 pub fn BinaryDetection::convert_byte(Self) -> Byte?
 pub fn BinaryDetection::quit_byte(Self) -> Byte?
 
@@ -138,16 +140,18 @@ pub(all) struct SinkContext {
 pub fn SinkContext::bytes(Self) -> Bytes
 pub fn SinkContext::lines(Self) -> Array[Bytes]
 
+#derive(Eq, @debug.Debug)
 pub(all) enum SinkContextKind {
   Before
   After
   Other
-} derive(Eq, @debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct SinkFinish {
   byte_count : Int64
   binary_byte_offset : Int64?
-} derive(@debug.Debug)
+}
 
 pub(all) struct SinkMatch {
   mut line_term : @matcher.LineTerminator

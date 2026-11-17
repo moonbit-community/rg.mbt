@@ -344,6 +344,7 @@ pub impl WriteColor for Buffer with fn reset(self) {
 
 ///|
 /// Whether to use colors or not, mirroring termcolor's `ColorChoice`.
+#derive(Eq, Debug)
 pub(all) enum ColorChoice {
   /// Try very hard to emit colors.
   Always
@@ -353,13 +354,14 @@ pub(all) enum ColorChoice {
   Auto
   /// Never emit colors.
   Never
-} derive(Eq, Debug)
+}
 
 ///|
 /// An error that occurs when parsing a `ColorChoice` fails.
+#derive(Eq, Debug)
 pub(all) suberror ColorChoiceParseError {
   ColorChoiceParseError(String)
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn ColorChoiceParseError::to_string(self : ColorChoiceParseError) -> String {

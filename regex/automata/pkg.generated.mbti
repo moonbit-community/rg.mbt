@@ -29,9 +29,10 @@ pub fn span_start(Int64) -> Int32
 pub fn utf8_sequences(Int32, Int32) -> Array[Array[(Int32, Int32)]]
 
 // Errors
+#derive(@debug.Debug)
 pub suberror BuildError {
   TooBig(Int32)
-} derive(@debug.Debug)
+}
 
 // Types and methods
 pub struct LazyDFA {
@@ -95,6 +96,7 @@ pub fn Prefilter::find_start(Self, FixedArray[Byte], Int32, Int32) -> Int32
 pub fn Prefilter::is_fast(Self) -> Bool
 pub fn Prefilter::new(Array[Bytes]) -> Self?
 
+#derive(Eq, @debug.Debug)
 pub(all) enum State {
   ByteRange(Int32, Int32, Int32)
   Sparse(Array[Transition])
@@ -104,14 +106,15 @@ pub(all) enum State {
   Capture(next~ : Int32, group~ : Int32, slot~ : Int32)
   Fail
   Match
-} derive(Eq, @debug.Debug)
+}
 pub fn State::is_epsilon(Self) -> Bool
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Transition {
   start : Int32
   end : Int32
   next : Int32
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

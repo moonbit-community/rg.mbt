@@ -1,13 +1,15 @@
 ///|
+#derive(Debug, Eq)
 pub(all) enum SpecialMode {
   HelpShort
   HelpLong
   VersionShort
   VersionLong
   VersionPCRE2
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum SearchMode {
   Standard
   FilesWithMatches
@@ -15,30 +17,33 @@ pub(all) enum SearchMode {
   Count
   CountMatches
   JSON
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum GenerateMode {
   Man
   CompleteBash
   CompleteZsh
   CompleteFish
   CompletePowerShell
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum IndexMode {
   Crud
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum Mode {
   Search(SearchMode)
   Index(IndexMode)
   Files
   Types
   Generate(GenerateMode)
-} derive(Debug, Eq)
+}
 
 ///|
 fn Mode::updated(self : Mode, new : Mode) -> Mode {
@@ -50,47 +55,53 @@ fn Mode::updated(self : Mode, new : Mode) -> Mode {
 }
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum BinaryMode {
   Auto
   SearchAndSuppress
   AsText
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum BoundaryMode {
   Line
   Word
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum BufferMode {
   Auto
   Line
   Block
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum CaseMode {
   Sensitive
   Insensitive
   Smart
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum ColorChoice {
   Never
   Auto
   Always
   Ansi
-} derive(Debug, Eq)
+}
 
 ///|
 /// Limited context settings: `-B`, `-A` and `-C`.
+#derive(Debug, Eq)
 pub(all) struct ContextModeLimited {
   before : Int32?
   after : Int32?
   both : Int32?
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn ContextModeLimited::get(self : ContextModeLimited) -> (Int32, Int32) {
@@ -110,10 +121,11 @@ pub fn ContextModeLimited::get(self : ContextModeLimited) -> (Int32, Int32) {
 }
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum ContextMode {
   Passthru
   Limited(ContextModeLimited)
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn ContextMode::default() -> ContextMode {
@@ -152,52 +164,59 @@ pub(all) enum EncodingMode {
 }
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum EngineChoice {
   Default
   Auto
   PCRE2
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum LoggingMode {
   Debug
   Trace
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum MmapMode {
   Auto
   AlwaysTryMmap
   Never
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum PatternSource {
   Regexp(String)
   File(String)
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum SortModeKind {
   Path
   LastModified
   LastAccessed
   Created
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) struct SortMode {
   reverse : Bool
   kind : SortModeKind
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum TypeChange {
   Clear(String)
   Add(String)
   Select(String)
   Negate(String)
-} derive(Debug, Eq)
+}
 
 ///|
 /// Low level arguments: a direct representation of the flags given.

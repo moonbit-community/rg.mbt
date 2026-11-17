@@ -1,5 +1,6 @@
 ///|
 /// The kind of an error that can occur when building a regex matcher.
+#derive(Debug, Eq)
 pub(all) enum GrepRegexErrorKind {
   /// An error from the regex engine (syntax error or size limit).
   Regex(String)
@@ -9,13 +10,14 @@ pub(all) enum GrepRegexErrorKind {
   InvalidLineTerminator(Byte)
   /// The pattern contains a banned byte.
   Banned(Byte)
-} derive(Debug, Eq)
+}
 
 ///|
 /// An error that can occur when building a regex matcher.
+#derive(Debug)
 pub suberror GrepRegexError {
   GrepRegexError(GrepRegexErrorKind)
-} derive(Debug)
+}
 
 ///|
 pub fn GrepRegexError::kind(self : GrepRegexError) -> GrepRegexErrorKind {

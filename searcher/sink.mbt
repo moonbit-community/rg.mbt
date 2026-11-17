@@ -1,9 +1,10 @@
 ///|
 /// Information passed to a sink when a search finishes.
+#derive(Debug)
 pub(all) struct SinkFinish {
   byte_count : Int64
   binary_byte_offset : Int64?
-} derive(Debug)
+}
 
 ///|
 /// A matching line (or lines, in multi-line mode). The matched bytes are
@@ -39,11 +40,12 @@ pub fn SinkMatch::lines(self : SinkMatch) -> Array[Bytes] {
 
 ///|
 /// The kind of context line.
+#derive(Debug, Eq)
 pub(all) enum SinkContextKind {
   Before
   After
   Other
-} derive(Debug, Eq)
+}
 
 ///|
 /// A context line.
