@@ -24,7 +24,7 @@ pub(all) enum Prefilter {
     FixedArray[Byte],
     FixedArray[Bool],
     Array[Array[FixedArray[Byte]]],
-    Int32
+    Int32,
   )
 }
 
